@@ -3314,14 +3314,7 @@ function renderFilms(){
 
     // "In roadmap #N" tag: check if any series in roadmap matches this saga
     let roadmapTag = '';
-    const rmEntry = db.roadmap.find(r=>{
-      if(r.id === fsId) return true;
-      const rSeries = db.series.find(s=>s.id===r.id);
-      if(!rSeries) return false;
-      const st=rSeries.title.toLowerCase();
-      const ft=fsName.toLowerCase();
-      return st.includes(ft)||ft.includes(st);
-    });
+    const rmEntry = db.roadmap.find(r => r.id === fsId);
     if(rmEntry){
       const rmPos = db.roadmap.findIndex(r=>r.id===rmEntry.id)+1;
       roadmapTag = `<span class="film-franchise-roadmap-tag">▶ N°${rmPos}</span>`;
