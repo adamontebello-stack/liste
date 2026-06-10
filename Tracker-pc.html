@@ -3320,7 +3320,7 @@ function renderFilms(){
       if(!rSeries) return false;
       const st=rSeries.title.toLowerCase();
       const ft=fsName.toLowerCase();
-      return st.includes(ft)||ft.includes(st)||st.split(' ').some(w=>w.length>3&&ft.includes(w));
+      return st.includes(ft)||ft.includes(st);
     });
     if(rmEntry){
       const rmPos = db.roadmap.findIndex(r=>r.id===rmEntry.id)+1;
