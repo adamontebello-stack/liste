@@ -2268,7 +2268,7 @@ function openSeriesDetail(id){
     const fs = (db.filmSeries||[]).find(x=>x.id===f.seriesId);
     if(!fs) return false;
     const st=s.title.toLowerCase(), ft=fs.title.toLowerCase();
-    return st.includes(ft)||ft.includes(st)||st.split(' ').some(w=>w.length>3&&ft.includes(w));
+    return st.includes(ft)||ft.includes(st);
   }).sort((a,b)=>(a.seriesOrder||99)-(b.seriesOrder||99));
 
   if(linked.length){
@@ -2521,7 +2521,7 @@ function buildRmItemHTML(r, i){
       const saga = allSeriesMap2[f.seriesId];
       if(!saga) return false;
       const st = saga.title.toLowerCase();
-      return st.includes(seriesTitle.split(' ')[0]) || seriesTitle.includes(st.split(' ')[0]);
+      return st.includes(seriesTitle) || seriesTitle.includes(st);
     });
     if(!matchedFilms.length) matchedFilms = allFilms.filter(f=>f.seriesId===r.id);
     matchedFilms.sort((a,b)=>(a.seriesOrder||999)-(b.seriesOrder||999));
