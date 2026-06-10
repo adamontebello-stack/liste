@@ -1656,8 +1656,8 @@ main {
   </div>
   <div class="ep-filter-row">
     <span class="ep-filter-label">Filtra ep</span>
-    <input class="ep-filter-input" type="number" id="epFilterInput" placeholder="es. 12" min="1" oninput="renderCatalog()">
-    <button class="ep-filter-clear" onclick="clearEpFilter()">✕ Reset</button>
+    <input class="ep-filter-input" type="number" id="epFilterInput" min="1" oninput="renderCatalog()">
+    <button class="ep-filter-clear" onclick="clearEpFilter()">✕</button>
     <span class="ep-filter-badge" id="epFilterBadge"></span>
   </div>
   <div class="stats-bar" id="catalogStats"></div>
@@ -1710,8 +1710,8 @@ main {
   </div>
   <div class="ep-filter-row">
     <span class="ep-filter-label">Filtra ep</span>
-    <input class="ep-filter-input" type="number" id="completedEpFilter" placeholder="es. 12" min="1" oninput="renderCompleted()">
-    <button class="ep-filter-clear" onclick="clearCompletedEpFilter()">✕ Reset</button>
+    <input class="ep-filter-input" type="number" id="completedEpFilter" min="1" oninput="renderCompleted()">
+    <button class="ep-filter-clear" onclick="clearCompletedEpFilter()">✕12</button>
     <span class="ep-filter-badge" id="completedEpBadge"></span>
   </div>
   <div class="search-row">
@@ -2151,7 +2151,7 @@ document.addEventListener('keydown', function(e){
     if(document.getElementById('importModal').classList.contains('open')){ closeImportModal(); return; }
     closeSettingsMenu();
   }
-  if(e.key === 'i' || e.key === 'I'){
+  if(e.key === 'n' || e.key === 'N'){
     const anyModalOpen = ['addSeriesModal','addFilmModal','editFilmModal','editSeriesModal','filmSeriesModal','importModal'].some(id=>document.getElementById(id).classList.contains('open'));
     const tag = e.target.tagName;
     const isInput = tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';
