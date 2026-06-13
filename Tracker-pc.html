@@ -207,17 +207,116 @@ body::after {
 /* ===== HEADER ===== */
 header {
   position: sticky; top: 0; z-index: 120;
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: none;
   padding: 0 1.4rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   height: 64px;
   gap: 8px;
 }
+header .hdr-actions {
+  position: absolute;
+  right: 1.4rem;
+}
+header .logo { display: none; }
+
+/* ===== VERTICAL SIDEBAR NAV ===== */
+.sidebar-nav {
+  position: fixed;
+  top: 50%;
+  left: 18px;
+  transform: translateY(-50%);
+  z-index: 130;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 6px;
+  box-shadow: var(--shadow-sm), inset 0 2px 8px rgba(0,0,0,0.2);
+}
+.sidebar-nav .nav-btn {
+  text-align: center;
+  padding: 12px 10px;
+  white-space: nowrap;
+}
+.sidebar-nav .nav-btn.icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; padding: 0;
+}
+.sidebar-nav-sep {
+  height: 1px;
+  background: var(--border2);
+  margin: 4px 2px;
+}
+.sidebar-nav .action-btn.icon-btn {
+  width: 42px; height: 42px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.sidebar-nav .settings-wrapper { position: relative; }
+.sidebar-nav .settings-toggle-btn.icon-btn {
+  width: 42px; height: 42px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.sidebar-nav .settings-dropdown {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 10px);
+  right: auto;
+}
+
+/* ===== SUB-NAV (Catalogo: Serie/Film) ===== */
+.subnav {
+  display: flex; justify-content: center; gap: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 6px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+  margin: 0 auto 0.6rem;
+  width: fit-content;
+  height: 45px;
+}
+.subnav .nav-btn { padding: 11px 26px; font-size: 0.75rem; }
+
+/* ===== FIXED TOP-RIGHT ACTION PANEL ===== */
+.fixed-action-panel {
+  position: fixed;
+  top: 18px;
+  right: 36px;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+.fixed-action-panel .fap-buttons {
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+}
+.fixed-action-panel .btn { white-space: nowrap; }
+.fixed-action-panel .icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; padding: 0;
+}
+.fixed-action-panel .icon-btn svg { width: 18px; height: 18px; }
+@media (max-width: 900px) {
+  .fixed-action-panel { display: none; }
+}
+
+#catalogo-fap { top: 18px; }
+
+.stat-pill-preferiti { cursor: pointer; }
+.stat-pill-preferiti:hover { border-color: var(--accent); }
+.stat-pill-preferiti.fav-active {
+  background: rgba(255,221,0,0.12);
+  border-color: #ffdd00;
+  color: #ffdd00;
+  box-shadow: 0 0 14px rgba(255,221,0,0.5);
+}
+.stat-pill-preferiti.fav-active strong { color: #ffdd00; }
 
 .logo {
   font-family: 'sans-serif', sans-serif;
@@ -270,6 +369,7 @@ nav {
   box-shadow: 0 3px 14px var(--accentGlow);
   transform: translateY(-1px);
 }
+.subnav .nav-btn.active { transform: none; }
 
 .hdr-actions {
   display: flex; gap: 6px; align-items: center; flex-shrink: 0;
@@ -548,7 +648,7 @@ main {
 }
 
 /* ===== CATALOG GRID ===== */
-.catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1050px; margin: 0 auto; }
 @media (max-width: 700px) { .catalog-grid { grid-template-columns: 1fr; } }
 
 .column {
@@ -599,7 +699,7 @@ main {
 .list { padding: 4px 0; }
 .item {
   display: flex; align-items: center; gap: 12px;
-  padding: 11px 1.3rem;
+  padding: 15px 1.8rem;
   border-bottom: 1px solid rgba(128,128,128,0.05);
   transition: background 0.15s;
 }
@@ -648,7 +748,7 @@ main {
 .empty-icon { font-size: 1.6rem; margin-bottom: 0.5rem; opacity: 0.4; }
 
 /* ===== ROADMAP & COMPLETED ITEMS ===== */
-.roadmap, .completed-grid { display: flex; flex-direction: column; gap: 8px; }
+.roadmap, .completed-grid { display: flex; flex-direction: column; gap: 8px; max-width: 900px; margin: 0 auto; }
 
 .rm-item, .completed-item {
   background: var(--surface);
@@ -880,14 +980,15 @@ main {
 .completed-item:hover .drag-handle { opacity: 0.8; background: var(--surface3); }
 
 /* ===== SEARCH ROW ===== */
-.search-row { display: flex; gap: 8px; margin-bottom: 1.1rem; flex-wrap: wrap; }
+.search-row { display: flex; gap: 10px; margin-bottom: 0.6rem; flex-wrap: wrap; justify-content: center; max-width: 960px; margin-left: auto; margin-right: auto; }
+.search-row.search-row-compact .search-input { flex: 0 1 340px; }
 .search-input {
   flex: 1;
   background: var(--surface);
   border: 1px solid var(--border);
-  padding: 10px 18px;
-  border-radius: 30px;
-  font-size: 0.85rem;
+  padding: 13px 22px;
+  border-radius: 36px;
+  font-size: 0.95rem;
   color: var(--text);
   font-family: 'sans-serif', sans-serif;
   outline: none;
@@ -900,10 +1001,10 @@ main {
 .sort-select {
   background: var(--surface);
   border: 1px solid var(--border);
-  padding: 9px 15px;
-  border-radius: 30px;
+  padding: 12px 18px;
+  border-radius: 36px;
   font-family: 'DM Mono', monospace;
-  font-size: 0.68rem; color: var(--text);
+  font-size: 0.74rem; color: var(--text);
   cursor: pointer; outline: none;
   transition: border-color 0.2s;
 }
@@ -1162,32 +1263,45 @@ main {
 
 /* ===== EP FILTER ===== */
 .ep-filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; }
+.search-row-compact .ep-filter-row { margin-bottom: 0; flex: 0 0 auto; }
 .ep-filter-label { font-size: 0.68rem; color: var(--muted2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+.ep-filter-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 .ep-filter-input {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 7px 13px;
+  padding: 7px 28px 7px 13px;
   border-radius: 24px;
-  font-size: 0.82rem;
-  width: 90px;
+  font-size: 0.95rem;
+  width: 80px;
+  height: 43.5px;
   outline: none;
   font-family: 'DM Mono', monospace;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+.ep-filter-input::placeholder { color: var(--muted); font-size: 0.95rem; font-family: 'DM Mono', monospace; letter-spacing: 0.07em; font-weight: 500; }
 .ep-filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accentGlow); }
 .ep-filter-clear {
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  color: var(--muted2);
-  padding: 6px 12px;
-  border-radius: 24px;
-  font-size: 0.74rem;
+  position: absolute;
+  right: 11px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.7rem;
   cursor: pointer;
-  transition: all 0.18s;
-  font-weight: 600;
+  padding: 2px;
+  line-height: 1;
+  transition: color 0.18s, opacity 0.15s;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
 }
-.ep-filter-clear:hover { border-color: var(--accent); color: var(--accent2); }
+.ep-filter-clear.visible { opacity: 1; pointer-events: auto; }
+.ep-filter-clear:hover { color: var(--accent2); }
 .ep-filter-badge {
   background: var(--accentGlow2);
   border: 1px solid var(--accent);
@@ -1514,7 +1628,7 @@ main {
   word-break: break-word;
 }
 
-/* ===== FILM VIEW TABS ===== */
+#film-catalog-container, #film-completed-container { max-width: 1050px; margin: 0 auto; }
 .film-view-tabs {
   display: flex; gap: 6px;
   margin-bottom: 1.2rem;
@@ -1595,104 +1709,163 @@ main {
 </head>
 <body class="theme-dark">
 
-<header>
-  <div class="logo">
-    <div class="logo-icon">ST</div>
-  </div>
-  <nav>
-    <button class="nav-btn active" onclick="showSection(event,'catalogo')">Catalogo</button>
-    <button class="nav-btn" onclick="showSection(event,'film')">Film</button>
-    <button class="nav-btn" onclick="showSection(event,'programma')">Programma</button>
-    <button class="nav-btn" onclick="showSection(event,'completate')">Completate</button>
-  </nav>
-  <div class="hdr-actions">
-    <select id="themeSelect" class="theme-selector" onchange="setThemeFromSelect(this.value)">
-      <option value="dark">Dark</option>
-      <option value="light">Light</option>
-      <option value="azure">Azure</option>
-      <option value="purple">Purple</option>
-      <option value="amber">Amber</option>
-    </select>
-    <!-- Settings button -->
-    <div class="settings-wrapper" id="settingsWrapper">
-      <button class="action-btn settings-toggle-btn" onclick="toggleSettingsMenu()" id="settingsToggleBtn" title="Impostazioni">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-        </svg>
+<!-- ===== VERTICAL SIDEBAR NAV ===== -->
+<nav class="sidebar-nav">
+  <button class="nav-btn active icon-btn" onclick="showSection(event,'catalogo')" title="Catalogo">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6.00067L21 6.00139M8 12.0007L21 12.0015M8 18.0007L21 18.0015M3.5 6H3.51M3.5 12H3.51M3.5 18H3.51M4 6C4 6.27614 3.77614 6.5 3.5 6.5C3.22386 6.5 3 6.27614 3 6C3 5.72386 3.22386 5.5 3.5 5.5C3.77614 5.5 4 5.72386 4 6ZM4 12C4 12.2761 3.77614 12.5 3.5 12.5C3.22386 12.5 3 12.2761 3 12C3 11.7239 3.22386 11.5 3.5 11.5C3.77614 11.5 4 11.7239 4 12ZM4 18C4 18.2761 3.77614 18.5 3.5 18.5C3.22386 18.5 3 18.2761 3 18C3 17.7239 3.22386 17.5 3.5 17.5C3.77614 17.5 4 17.7239 4 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="nav-btn icon-btn" onclick="showSection(event,'programma')" title="Programma">
+    <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"><path d="M3 8h7m25 16a8 8 0 1 0 0-16H20m-7 32a8 8 0 1 1 0-16h12m-2 16h12M10 8a5 5 0 1 0 10 0a5 5 0 1 0-10 0"/><path d="M13 40a5 5 0 1 0 10 0a5 5 0 1 0-10 0m12-16a5 5 0 1 0 10 0a5 5 0 1 0-10 0m10.269 20.408c.08.494.555.726 1.017.535c.817-.338 2.273-.997 4.479-2.188c1.477-.798 2.45-1.436 3.085-1.916c.793-.598.794-1.57 0-2.169c-.635-.48-1.608-1.118-3.085-1.915c-2.206-1.19-3.662-1.85-4.479-2.188c-.462-.192-.936.041-1.017.535c-.128.776-.269 2.19-.269 4.653s.141 3.877.269 4.653"/></g></svg>
+  </button>
+  <button class="nav-btn icon-btn" onclick="showSection(event,'completate')" title="Completate">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" fill-rule="evenodd" d="M5.75 1a.75.75 0 1 0 0 1.5h4.5a.75.75 0 1 0 0-1.5h-4.5Zm-2 2.5a.75.75 0 1 0 0 1.5h8.5a.75.75 0 1 0 0-1.5h-8.5Zm-1.25 4v6h11v-6h-11ZM2 6a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H2Zm8.28 3.83a.75.75 0 1 0-1.06-1.06l-1.97 1.97l-.47-.47a.75.75 0 1 0-1.06 1.06l1 1a.75.75 0 0 0 1.06 0l2.5-2.5Z" clip-rule="evenodd"/></svg>
+  </button>
+  <div class="sidebar-nav-sep"></div>
+  <button id="themeBtn" class="action-btn icon-btn" onclick="cycleTheme()" title="Cambia tema">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.48-9-10-9z"/>
+      <circle cx="6.5" cy="11.5" r="1.5" fill="currentColor"/>
+      <circle cx="9.5" cy="7.5" r="1.5" fill="currentColor"/>
+      <circle cx="14.5" cy="7.5" r="1.5" fill="currentColor"/>
+      <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor"/>
+    </svg>
+  </button>
+  <!-- Settings button -->
+  <div class="settings-wrapper" id="settingsWrapper">
+    <button class="action-btn settings-toggle-btn icon-btn" onclick="toggleSettingsMenu()" id="settingsToggleBtn" title="Impostazioni">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+    </button>
+    <div class="settings-dropdown" id="settingsDropdown">
+      <div class="settings-dropdown-title">Impostazioni</div>
+      <button class="settings-item" onclick="manualSync(); closeSettingsMenu();" id="syncBtn">
+        <span class="sync-dot" id="syncDot"></span>
+        <span class="sync-icon" id="syncIcon">⟳</span>
+        <span>Sync</span>
       </button>
-      <div class="settings-dropdown" id="settingsDropdown">
-        <div class="settings-dropdown-title">Impostazioni</div>
-        <button class="settings-item" onclick="manualSync(); closeSettingsMenu();" id="syncBtn">
-          <span class="sync-dot" id="syncDot"></span>
-          <span class="sync-icon" id="syncIcon">⟳</span>
-          <span>Sync</span>
-        </button>
-        <button class="settings-item" onclick="exportJSON(); closeSettingsMenu();">
-          <span>↓</span><span>Esporta JSON</span>
-        </button>
-        <button class="settings-item" onclick="document.getElementById('importFile').click(); closeSettingsMenu();">
-          <span>↑</span><span>Importa JSON</span>
-        </button>
-        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
-      </div>
+      <button class="settings-item" onclick="exportJSON(); closeSettingsMenu();">
+        <span>↓</span><span>Esporta JSON</span>
+      </button>
+      <button class="settings-item" onclick="document.getElementById('importFile').click(); closeSettingsMenu();">
+        <span>↑</span><span>Importa JSON</span>
+      </button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
     </div>
   </div>
-</header>
+</nav>
+
+<!-- ===== FIXED TOP-RIGHT ACTION PANEL ===== -->
+<div class="fixed-action-panel" id="catalogo-fap" style="display:flex">
+  <div class="fap-buttons" id="catalogo-fap-serie-buttons">
+    <button class="btn" onclick="openAddSeriesModal()">+ Aggiungi Serie</button>
+  </div>
+  <div class="fap-buttons" id="catalogo-fap-film-buttons" style="display:none">
+    <button class="btn" onclick="openAddFilmModal()">+ Aggiungi Film</button>
+    <button class="btn btn-ghost" onclick="openFilmSeriesModal()">Gestisci Saghe</button>
+  </div>
+</div>
+
+<div class="fixed-action-panel" id="programma-fap" style="display:none">
+</div>
+
+<div class="fixed-action-panel" id="completate-fap" style="display:none">
+</div>
 
 <main>
 <!-- ===== CATALOGO ===== -->
 <div class="section active" id="catalogo">
-  <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
-    <button class="btn" onclick="openAddSeriesModal()">+ Aggiungi serie</button>
+  <!-- Sub-nav Catalogo: Serie / Film -->
+  <div class="subnav">
+    <button class="nav-btn active" onclick="showCatalogSubTab(event,'serie')">SERIE</button>
+    <button class="nav-btn" onclick="showCatalogSubTab(event,'film')">FILM</button>
   </div>
-  <div class="search-row">
-    <input class="search-input" type="text" placeholder="🔍 Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalog()">
-    <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
-      <option value="eps">ep ↑</option>
-      <option value="title">A–Z</option>
-      <option value="recent">Recenti</option>
-    </select>
-  </div>
-  <div class="ep-filter-row">
-    <span class="ep-filter-label">Filtra ep</span>
-    <input class="ep-filter-input" type="number" id="epFilterInput" min="1" oninput="renderCatalog()">
-    <button class="ep-filter-clear" onclick="clearEpFilter()">✕</button>
-    <span class="ep-filter-badge" id="epFilterBadge"></span>
-  </div>
-  <div class="stats-bar" id="catalogStats"></div>
-  <div class="catalog-grid">
-    <div class="column col-dub">
-      <div class="column-header">
-        <div class="column-title"><span class="badge dub">DUB</span><h3>Doppiato</h3></div>
-        <span class="count-badge" id="dub-count">0</span>
+
+  <!-- ===== SERIE SUBTAB ===== -->
+  <div id="catalog-serie-subtab">
+    <div class="search-row search-row-compact" style="margin-bottom:0.6rem">
+      <input class="search-input" type="text" placeholder="Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalog()">
+      <div class="ep-filter-row">
+        <div class="ep-filter-wrap">
+          <input class="ep-filter-input" type="number" id="epFilterInput" min="1" placeholder="EP" oninput="toggleEpClear(this,'epFilterClear');renderCatalog()">
+          <button class="ep-filter-clear" id="epFilterClear" onclick="clearEpFilter()">✕</button>
+        </div>
       </div>
-      <div class="list" id="dub-list"></div>
+      <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
+        <option value="eps">ep ↑</option>
+        <option value="title">A–Z</option>
+        <option value="recent">Recenti</option>
+      </select>
     </div>
-    <div class="column col-sub">
-      <div class="column-header">
-        <div class="column-title"><span class="badge sub">SUB</span><h3>Sottotitolato</h3></div>
-        <span class="count-badge" id="sub-count">0</span>
+    <div class="stats-bar" id="catalogStats" style="margin-bottom:1rem;"><span class="ep-filter-badge" id="epFilterBadge"></span></div>
+    <div class="catalog-grid">
+      <div class="column col-dub">
+        <div class="column-header">
+          <div class="column-title"><span class="badge dub">DUB</span><h3>Doppiato</h3></div>
+          <span class="count-badge" id="dub-count">0</span>
+        </div>
+        <div class="list" id="dub-list"></div>
       </div>
-      <div class="list" id="sub-list"></div>
+      <div class="column col-sub">
+        <div class="column-header">
+          <div class="column-title"><span class="badge sub">SUB</span><h3>Sottotitolato</h3></div>
+          <span class="count-badge" id="sub-count">0</span>
+        </div>
+        <div class="list" id="sub-list"></div>
+      </div>
     </div>
+  </div>
+
+  <!-- ===== FILM SUBTAB ===== -->
+  <div id="catalog-film-subtab" style="display:none">
+    <!-- SEARCH + VIEW TABS -->
+    <div class="search-row search-row-compact" style="margin-bottom:0.75rem">
+      <input class="search-input" type="text" placeholder="Cerca nei film…" id="filmSearch" oninput="renderFilms()">
+      <select class="sort-select" id="filmSort" onchange="renderFilms()">
+        <option value="title">A–Z</option>
+        <option value="recent">Recenti</option>
+      </select>
+      <select class="sort-select" id="filmTypeFilter" onchange="renderFilms()">
+        <option value="all">Tutti</option>
+        <option value="DUB">Solo DUB</option>
+        <option value="SUB">Solo SUB</option>
+      </select>
+    </div>
+    <div class="film-view-tabs" id="filmViewTabs">
+      <button class="film-view-tab" data-tab="standalone" onclick="toggleFilmTab('standalone')">Stand-alone</button>
+      <button class="film-view-tab" data-tab="saghe" onclick="toggleFilmTab('saghe')">Saghe</button>
+      <button class="film-view-tab" data-tab="completati" onclick="toggleFilmTab('completati')">Completati</button>
+    </div>
+
+    <!-- CATALOGO FILM -->
+    <div id="film-catalog-container"></div>
+
+    <!-- FILM COMPLETATI -->
+    <div class="search-row search-row-compact" style="margin-top:2rem;margin-bottom:0.8rem" id="film-completed-search-row">
+      <input class="search-input" type="text" placeholder="Cerca nei completati…" id="filmCompletedSearch" oninput="renderFilmsCompleted()">
+      <select class="sort-select" id="filmCompletedSort" onchange="renderFilmsCompleted()">
+        <option value="recent">Recenti</option>
+        <option value="title">A–Z</option>
+      </select>
+    </div>
+    <div id="film-completed-container" class="completed-grid"></div>
   </div>
 </div>
 
 <!-- ===== PROGRAMMA ===== -->
 <div class="section" id="programma">
-  <div class="sec-header">
-    <h2 class="sec-title">Roadmap</h2>
-    <div style="display:flex;gap:7px;">
+  <div class="section-inline-bar">
+    <div class="stats-bar" style="margin-bottom:0.6rem;">
       <button class="btn btn-ghost btn-sm" onclick="addRandom()">Random</button>
       <button class="btn btn-sm" onclick="addRandom('DUB')">+ DUB</button>
       <button class="btn btn-sm" onclick="addRandom('SUB')">+ SUB</button>
     </div>
-  </div>
-  <div class="stats-bar">
-    <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
-    <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
-    <div class="stat-pill"><span class="dot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2)"></span> Watching: <strong id="watching-count">0</strong></div>
+    <div class="stats-bar" style="margin-bottom:0.6rem;">
+      <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
+      <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
+      <div class="stat-pill"><span class="dot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2)"></span> Watching: <strong id="watching-count">0</strong></div>
+    </div>
   </div>
   <div class="roadmap" id="roadmap"></div>
   <div class="section-label" id="dropped-label" style="display:none; margin: 0.8rem 0 0.3rem;">Droppate</div>
@@ -1701,21 +1874,14 @@ main {
 
 <!-- ===== COMPLETATE ===== -->
 <div class="section" id="completate">
-  <div class="sec-header"><h2 class="sec-title">Completate</h2></div>
-  <div class="stats-bar">
-    <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completed-count">0</strong></div>
-    <div class="stat-pill"><span class="dot blue"></span> Episodi visti: <strong id="total-eps">0</strong></div>
-    <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 5px var(--dub-color)"></span> DUB: <strong id="completed-dub-count">0</strong></div>
-    <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 5px var(--sub-color)"></span> SUB: <strong id="completed-sub-count">0</strong></div>
-  </div>
-  <div class="ep-filter-row">
-    <span class="ep-filter-label">Filtra ep</span>
-    <input class="ep-filter-input" type="number" id="completedEpFilter" min="1" oninput="renderCompleted()">
-    <button class="ep-filter-clear" onclick="clearCompletedEpFilter()">✕</button>
-    <span class="ep-filter-badge" id="completedEpBadge"></span>
-  </div>
-  <div class="search-row">
-    <input class="search-input" placeholder="🔍 Cerca nelle completate…" id="completedSearch" oninput="renderCompleted()">
+  <div class="search-row search-row-compact">
+    <input class="search-input" placeholder="Cerca nelle completate…" id="completedSearch" oninput="renderCompleted()">
+    <div class="ep-filter-row">
+      <div class="ep-filter-wrap">
+        <input class="ep-filter-input" type="number" id="completedEpFilter" min="1" placeholder="EP" oninput="toggleEpClear(this,'completedEpClear');renderCompleted()">
+        <button class="ep-filter-clear" id="completedEpClear" onclick="clearCompletedEpFilter()">✕</button>
+      </div>
+    </div>
     <select class="sort-select" id="completedTypeFilter" onchange="renderCompleted()">
       <option value="all">Tutti</option>
       <option value="DUB">Solo DUB</option>
@@ -1728,62 +1894,16 @@ main {
       <option value="custom">⠿ Personalizzato</option>
     </select>
   </div>
+  <div class="stats-bar" style="margin-bottom:1rem;">
+    <div class="stat-pill"><span class="dot blue"></span> Ep Totali: <strong id="total-eps">0</strong></div>
+    <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completed-count">0</strong></div>
+    <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 5px var(--dub-color)"></span> DUB: <strong id="completed-dub-count">0</strong></div>
+    <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 5px var(--sub-color)"></span> SUB: <strong id="completed-sub-count">0</strong></div>
+    <span class="ep-filter-badge" id="completedEpBadge"></span>
+  </div>
   <div class="completed-grid" id="completed-list"></div>
 </div>
 
-<!-- ===== FILM ===== -->
-<div class="section" id="film">
-
-  <!-- ADD BUTTONS -->
-  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:1rem;">
-    <button class="btn btn-ghost btn-sm" onclick="openFilmSeriesModal()">Gestisci Saghe</button>
-    <button class="btn" onclick="openAddFilmModal()">+ Aggiungi film</button>
-  </div>
-
-  <!-- STATS -->
-  <div class="stats-bar" id="filmStats"></div>
-
-  <!-- SEARCH + VIEW TABS -->
-  <div class="search-row" style="margin-bottom:0.75rem">
-    <input class="search-input" type="text" placeholder="Cerca nei film…" id="filmSearch" oninput="renderFilms()">
-    <select class="sort-select" id="filmSort" onchange="renderFilms()">
-      <option value="title">A–Z</option>
-      <option value="recent">Recenti</option>
-    </select>
-    <select class="sort-select" id="filmTypeFilter" onchange="renderFilms()">
-      <option value="all">Tutti</option>
-      <option value="DUB">Solo DUB</option>
-      <option value="SUB">Solo SUB</option>
-    </select>
-  </div>
-  <div class="film-view-tabs" id="filmViewTabs">
-    <button class="film-view-tab" data-tab="standalone" onclick="toggleFilmTab('standalone')">Stand-alone</button>
-    <button class="film-view-tab" data-tab="saghe" onclick="toggleFilmTab('saghe')">Saghe</button>
-    <button class="film-view-tab" data-tab="completati" onclick="toggleFilmTab('completati')">Completati</button>
-  </div>
-
-  <!-- CATALOGO FILM -->
-  <div class="sec-header" style="margin-bottom:0.7rem" id="film-catalog-header">
-    <h2 class="sec-title">Catalogo Film</h2>
-    <span class="count-badge" id="film-catalog-count">0</span>
-  </div>
-  <div id="film-catalog-container"></div>
-
-  <!-- FILM COMPLETATI -->
-  <div class="sec-header" style="margin-top:2rem;margin-bottom:0.7rem" id="film-completed-header">
-    <h2 class="sec-title">Film Completati</h2>
-    <span class="count-badge" id="film-completed-count">0</span>
-  </div>
-  <div class="search-row" style="margin-bottom:0.8rem" id="film-completed-search-row">
-    <input class="search-input" type="text" placeholder="Cerca nei completati…" id="filmCompletedSearch" oninput="renderFilmsCompleted()">
-    <select class="sort-select" id="filmCompletedSort" onchange="renderFilmsCompleted()">
-      <option value="recent">Recenti</option>
-      <option value="title">A–Z</option>
-    </select>
-  </div>
-  <div id="film-completed-container" class="completed-grid"></div>
-
-</div>
 </main>
 
 <!-- ===== GLOBAL NOTES TOOLTIP ===== -->
@@ -1984,18 +2104,22 @@ let db = { series:[], roadmap:[], dropped:[], completed:[], filmSeries:[], films
 let lastPushedAt=0, syncTimer=null, syncQueue=Promise.resolve();
 
 // ---- TEMA ----
+const THEME_ORDER = ['dark','light','azure','purple','amber'];
 function setTheme(theme){
   const body=document.body;
   body.classList.remove('theme-dark','theme-light','theme-azure','theme-purple','theme-amber');
   body.classList.add(`theme-${theme}`);
   localStorage.setItem('st_theme',theme);
-  const sel=document.getElementById('themeSelect');
-  if(sel) sel.value=theme;
 }
-function setThemeFromSelect(t){ setTheme(t); }
+function cycleTheme(){
+  const current = localStorage.getItem('st_theme') || 'dark';
+  const idx = THEME_ORDER.indexOf(current);
+  const next = THEME_ORDER[(idx+1) % THEME_ORDER.length];
+  setTheme(next);
+}
 function loadTheme(){
   const s=localStorage.getItem('st_theme');
-  if(s&&['dark','light','azure','purple','amber'].includes(s)) setTheme(s);
+  if(s&&THEME_ORDER.includes(s)) setTheme(s);
   else setTheme('dark');
 }
 
@@ -2072,10 +2196,15 @@ function toast(msg,type='info'){ const t=document.getElementById('toast'); t.tex
 function showSection(event,id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav .nav-btn').forEach(b=>b.classList.remove('active'));
   event.currentTarget.classList.add('active');
+  // Toggle fixed action panels
+  ['catalogo','programma','completate'].forEach(s=>{
+    const p=document.getElementById(s+'-fap');
+    if(p) p.style.display = (s===id) ? 'flex' : 'none';
+  });
   // Render only the section being shown
-  if(id==='catalogo') renderCatalog();
+  if(id==='catalogo'){ renderCatalog(); renderFilms(); renderFilmsCompleted(); }
   else if(id==='programma'){ renderRoadmap(); renderDropped(); }
   else if(id==='completate'){
     // Ripristina ordinamento salvato
@@ -2086,7 +2215,18 @@ function showSection(event,id){
     }
     renderCompleted();
   }
-  else if(id==='film'){ renderFilms(); renderFilmsCompleted(); }
+}
+
+// ---- CATALOG SUBTABS (Serie / Film) ----
+function showCatalogSubTab(event,tab){
+  document.querySelectorAll('#catalogo .subnav .nav-btn').forEach(b=>b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('catalog-serie-subtab').style.display = tab==='serie' ? '' : 'none';
+  document.getElementById('catalog-film-subtab').style.display = tab==='film' ? '' : 'none';
+  document.getElementById('catalogo-fap-serie-buttons').style.display = tab==='serie' ? '' : 'none';
+  document.getElementById('catalogo-fap-film-buttons').style.display = tab==='film' ? '' : 'none';
+  if(tab==='film'){ renderFilms(); renderFilmsCompleted(); }
+  else { renderCatalog(); }
 }
 
 // ---- ADD SERIES MODAL ----
@@ -2159,8 +2299,12 @@ document.addEventListener('keydown', function(e){
       e.preventDefault();
       const active = document.querySelector('.section.active');
       if(active){
-        if(active.id==='catalogo'){ openAddSeriesModal(); return; }
-        if(active.id==='film'){ openAddFilmModal(); return; }
+        if(active.id==='catalogo'){
+          const filmSubtab = document.getElementById('catalog-film-subtab');
+          if(filmSubtab && filmSubtab.style.display !== 'none'){ openAddFilmModal(); }
+          else { openAddSeriesModal(); }
+          return;
+        }
       }
     }
   }
@@ -2382,8 +2526,15 @@ function updateCatalogStats(){
   const all=db.series;
   const totalEps=all.reduce((a,s)=>a+s.eps,0);
   const favCount=all.filter(s=>s.favorite).length;
-  const favPill = favCount>0 ? `<div class="stat-pill" style="color:#ffd700;border-color:rgba(255,215,0,0.3);">★ Preferiti: <strong>${favCount}</strong></div>` : '';
-  document.getElementById('catalogStats').innerHTML=`<div class="stat-pill"><span class="dot"></span> Totale: <strong>${all.length}</strong></div><div class="stat-pill"><span class="dot blue"></span> DUB: <strong>${all.filter(s=>s.type==='DUB').length}</strong></div><div class="stat-pill"><span class="dot red"></span> SUB: <strong>${all.filter(s=>s.type==='SUB').length}</strong></div><div class="stat-pill"><span class="dot amber"></span> Ep totali: <strong>${totalEps}</strong></div>${favPill}`;
+  const favActiveCls = _onlyFavorites ? ' fav-active' : '';
+  const favPill = `<div class="stat-pill stat-pill-preferiti${favActiveCls}" onclick="toggleOnlyFavorites()">★ Preferiti: <strong>${favCount}</strong></div>`;
+  document.getElementById('catalogStats').innerHTML=`<div class="stat-pill"><span class="dot amber"></span> Ep totali: <strong>${totalEps}</strong></div><div class="stat-pill"><span class="dot"></span> Totale: <strong>${all.length}</strong></div><div class="stat-pill"><span class="dot blue"></span> DUB: <strong>${all.filter(s=>s.type==='DUB').length}</strong></div><div class="stat-pill"><span class="dot red"></span> SUB: <strong>${all.filter(s=>s.type==='SUB').length}</strong></div>${favPill}<span class="ep-filter-badge" id="epFilterBadge"></span>`;
+}
+
+let _onlyFavorites = false;
+function toggleOnlyFavorites(){
+  _onlyFavorites = !_onlyFavorites;
+  renderCatalog();
 }
 
 function renderSortedSeries(list){
@@ -2395,7 +2546,8 @@ function renderList(id,data){
   if(!data.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">◌</div>Nessuna serie</div>`; return; }
   el.innerHTML=data.map((s,i)=>buildItemHTML(s,i)).join('');
 }
-function clearEpFilter(){ document.getElementById('epFilterInput').value=''; renderCatalog(); }
+function toggleEpClear(input, btnId){ document.getElementById(btnId).classList.toggle('visible', input.value !== ''); }
+function clearEpFilter(){ const i=document.getElementById('epFilterInput'); i.value=''; document.getElementById('epFilterClear').classList.remove('visible'); renderCatalog(); }
 
 let _editingSeriesId = null;
 let _editOngoing = false;
@@ -2458,14 +2610,14 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEditModal();
 function renderCatalog(){
   const q=(document.getElementById('catalogSearch')?.value||'').toLowerCase();
   const epF=parseInt(document.getElementById('epFilterInput')?.value)||0;
-  const badge=document.getElementById('epFilterBadge');
-  if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
-  let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF));
+  let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite));
   const dubs=renderSortedSeries(filtered.filter(s=>s.type==='DUB'));
   const subs=renderSortedSeries(filtered.filter(s=>s.type==='SUB'));
   document.getElementById('dub-count').textContent=dubs.length;
   document.getElementById('sub-count').textContent=subs.length;
   updateCatalogStats();
+  const badge=document.getElementById('epFilterBadge');
+  if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
   renderList('dub-list',dubs);
   renderList('sub-list',subs);
 }
@@ -2685,7 +2837,7 @@ function renderDropped(){
 }
 
 // ---- COMPLETATE ----
-function clearCompletedEpFilter(){ document.getElementById('completedEpFilter').value=''; renderCompleted(); }
+function clearCompletedEpFilter(){ const i=document.getElementById('completedEpFilter'); i.value=''; document.getElementById('completedEpClear').classList.remove('visible'); renderCompleted(); }
 function renderCompleted(){
   const q=(document.getElementById('completedSearch')?.value||'').toLowerCase();
   const sortSel=document.getElementById('completedSort');
