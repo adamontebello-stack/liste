@@ -157,26 +157,13 @@ body::after {
   gap: 10px; min-height: 42px;
 }
 
-.logo {
-  display: flex; align-items: center; gap: 9px;
-  font-size: 1.05rem; font-weight: 900;
-  letter-spacing: -0.03em;
+.top-bar-actions {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  flex: 1; min-width: 0;
 }
-.logo-icon {
-  width: 32px; height: 32px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 800;
-  box-shadow: 0 0 18px var(--accentGlow), 0 2px 6px rgba(0,0,0,0.4);
-  animation: logoPulse 3s ease-in-out infinite;
-  flex-shrink: 0;
-}
-@keyframes logoPulse {
-  0%,100% { box-shadow: 0 0 16px var(--accentGlow), 0 2px 6px rgba(0,0,0,0.4); }
-  50%      { box-shadow: 0 0 28px var(--accentGlow), 0 2px 6px rgba(0,0,0,0.4); }
-}
-.logo-text span { color: var(--accent2); }
+.top-bar-settings { flex-shrink: 0; margin-left: auto; }
+.top-bar-settings .icon-btn svg { width: 18px; height: 18px; }
+.top-bar-settings .icon-btn svg path { stroke: currentColor; }
 
 .hdr-actions {
   display: flex; gap: 6px; align-items: center;
@@ -248,11 +235,11 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: none; border: none;
   color: var(--muted);
-  padding: 5px 4px;
+  padding: 6px 4px;
   border-radius: 10px;
   cursor: pointer;
   font-family: 'Nunito', sans-serif;
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -714,10 +701,11 @@ input[type="number"] { -moz-appearance: textfield; }
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 8px 12px;
+  padding: 11px 14px;
   border-radius: 22px;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   width: 80px;
+  min-height: 42px;
   outline: none; -webkit-appearance: none;
   font-family: 'JetBrains Mono', monospace;
   transition: border-color 0.2s;
@@ -1332,10 +1320,8 @@ input[type="number"] { -moz-appearance: textfield; }
 <style>
 /* ===== SETTINGS DROPDOWN ===== */
 .settings-wrap { position: relative; }
-.tab-btn-wrap { flex: 1; display: flex; flex-direction: column; align-items: stretch; }
-.tab-btn-wrap > .tab-btn { width: 100%; }
 .settings-dropdown {
-  position: absolute; bottom: calc(100% + 8px); right: 0;
+  position: absolute; top: calc(100% + 8px); right: 0;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: 16px;
@@ -1407,10 +1393,10 @@ input[type="number"] { -moz-appearance: textfield; }
 
 .fav-filter-btn {
   background: var(--surface3); border: 1px solid var(--border);
-  color: var(--muted2); padding: 7px 11px; border-radius: 22px;
-  font-size: 0.72rem; cursor: pointer; font-weight: 700;
+  color: var(--muted2); padding: 11px 16px; border-radius: 22px;
+  font-size: 0.8rem; cursor: pointer; font-weight: 700;
   -webkit-appearance: none; transition: all 0.18s;
-  white-space: nowrap;
+  white-space: nowrap; min-height: 42px;
 }
 .fav-filter-btn.active {
   background: rgba(255,215,0,0.15);
@@ -1419,6 +1405,66 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: 0 0 8px rgba(255,215,0,0.2);
 }
 .fav-filter-btn:active { transform: scale(0.95); }
+
+/* ===== INLINE FILTER DROPDOWN (funnel) ===== */
+.filter-dropdown-wrap { position: relative; flex-shrink: 0; }
+.filter-funnel-btn {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-appearance: none;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.filter-funnel-btn svg { width: 18px; height: 18px; }
+.filter-funnel-btn svg path { stroke: currentColor; }
+.filter-funnel-btn.active {
+  color: var(--accent2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accentGlow2);
+}
+.filter-funnel-btn:active { transform: scale(0.94); }
+.filter-dropdown-panel {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 14px;
+  width: max(85vw, 260px);
+  max-width: calc(100vw - 28px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 500;
+  display: none;
+  animation: popIn 0.18s cubic-bezier(0.34,1.3,0.64,1);
+}
+.filter-dropdown-panel.open { display: block; }
+.filter-dropdown-row { display: flex; gap: 8px; align-items: center; }
+.filter-dropdown-row .ep-filter-input { flex: 1; }
+.filter-section { margin-bottom: 14px; }
+.filter-section:last-child { margin-bottom: 0; }
+.filter-section-label {
+  font-size: 0.66rem; color: var(--muted); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 8px; display: block;
+}
+.filter-pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-pill {
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--muted2); padding: 11px 16px; border-radius: 22px;
+  font-size: 0.8rem; cursor: pointer; font-weight: 700;
+  -webkit-appearance: none; transition: all 0.18s;
+  white-space: nowrap; font-family: 'Nunito', sans-serif;
+  flex: 1 1 auto; text-align: center;
+  min-height: 42px; display: flex; align-items: center; justify-content: center;
+}
+.filter-pill.active {
+  background: var(--accentGlow2); border-color: var(--accent);
+  color: var(--accent2);
+}
+.filter-pill:active { transform: scale(0.95); }
 
 /* ===== CATALOG TAB SWITCHER ===== */
 .catalog-tab-switcher {
@@ -1650,9 +1696,51 @@ input[type="number"] { -moz-appearance: textfield; }
 <!-- TOP BAR -->
 <div class="top-bar">
   <div class="top-bar-inner">
-    <div class="logo">
-      <div class="logo-icon">ST</div>
-      <div class="logo-text">Serie<span>Tracker</span></div>
+    <div class="top-bar-actions" id="topBarActions">
+      <!-- Catalogo -->
+      <button class="add-btn topbar-action" data-section="catalogo" onclick="openAddSeriesPopup()">＋ Aggiungi serie</button>
+      <!-- Film -->
+      <button class="btn btn-ghost btn-sm topbar-action" data-section="film-section" style="display:none" onclick="openFilmSeriesManager()">🎬 Saghe</button>
+      <button class="add-btn topbar-action" data-section="film-section" style="display:none" onclick="openAddFilmPopup()">＋ Aggiungi</button>
+      <!-- Roadmap -->
+      <button class="btn btn-ghost btn-sm topbar-action" data-section="programma" style="display:none" onclick="addRandom()">⚄ Random</button>
+      <button class="btn btn-sm topbar-action" data-section="programma" style="display:none" onclick="addRandom('DUB')">+D</button>
+      <button class="btn btn-sm topbar-action" data-section="programma" style="display:none" onclick="addRandom('SUB')">+S</button>
+    </div>
+    <div class="settings-wrap top-bar-settings">
+      <button class="icon-btn" id="settingsBtn" onclick="toggleSettingsDropdown()" title="Impostazioni">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15.0505 9H5.5C4.11929 9 3 7.88071 3 6.5C3 5.11929 4.11929 4 5.5 4H15.0505M8.94949 20H18.5C19.8807 20 21 18.8807 21 17.5C21 16.1193 19.8807 15 18.5 15H8.94949M3 17.5C3 19.433 4.567 21 6.5 21C8.433 21 10 19.433 10 17.5C10 15.567 8.433 14 6.5 14C4.567 14 3 15.567 3 17.5ZM21 6.5C21 8.433 19.433 10 17.5 10C15.567 10 14 8.433 14 6.5C14 4.567 15.567 3 17.5 3C19.433 3 21 4.567 21 6.5Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="settings-dropdown" id="settingsDropdown" style="right:0">
+        <div class="sdb-theme-row">
+          <span class="sdb-theme-label">STILE</span>
+          <div class="sdb-theme-btns" id="sdbThemeBtns">
+            <button class="sdb-theme-dot theme-dark-dot" onclick="setTheme('dark')" data-theme="dark" title="Dark"></button>
+            <button class="sdb-theme-dot theme-light-dot" onclick="setTheme('light')" data-theme="light" title="Light"></button>
+            <button class="sdb-theme-dot theme-azure-dot" onclick="setTheme('azure')" data-theme="azure" title="Azure"></button>
+            <button class="sdb-theme-dot theme-purple-dot" onclick="setTheme('purple')" data-theme="purple" title="Purple"></button>
+            <button class="sdb-theme-dot theme-amber-dot" onclick="setTheme('amber')" data-theme="amber" title="Amber"></button>
+            <button class="sdb-theme-dot theme-neutral-dot" onclick="setTheme('neutral')" data-theme="neutral" title="Neutral"></button>
+          </div>
+        </div>
+        <div class="settings-dropdown-divider"></div>
+        <button class="settings-dropdown-btn" onclick="manualSync()">
+          <span class="sdb-icon">⟳</span>
+          <span>Sync</span>
+          <span class="sync-dot" id="syncDot" style="position:static;margin-left:auto"></span>
+        </button>
+        <div class="settings-dropdown-divider"></div>
+        <button class="settings-dropdown-btn" onclick="exportJSON()">
+          <span class="sdb-icon">↓</span>
+          <span>Esporta JSON</span>
+        </button>
+        <button class="settings-dropdown-btn" onclick="document.getElementById('importFile').click()">
+          <span class="sdb-icon">↑</span>
+          <span>Importa JSON</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1662,25 +1750,34 @@ input[type="number"] { -moz-appearance: textfield; }
 
 <!-- ===== CATALOGO ===== -->
 <div class="section active" id="catalogo">
-  <div class="sec-header" style="margin-bottom:12px">
-    <h2 class="sec-title">Catalogo</h2>
-    <button class="add-btn" onclick="openAddSeriesPopup()">＋ Aggiungi serie</button>
-  </div>
-
   <div class="search-row">
     <input class="search-input" type="text" placeholder="🔍 Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalog()">
-    <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
-      <option value="eps">ep ↑</option>
-      <option value="title">A–Z</option>
-      <option value="recent">Recenti</option>
-    </select>
-  </div>
-  <div class="ep-filter-row">
-    <span class="ep-filter-label">Filtra ep</span>
-    <input class="ep-filter-input" type="number" id="epFilterInput" placeholder="es.12" min="1" oninput="renderCatalog()">
-    <button class="ep-filter-clear" onclick="clearEpFilter()">✕ Reset</button>
-    <span class="ep-filter-badge" id="epFilterBadge"></span>
-    <button class="fav-filter-btn" id="favFilterBtn" onclick="toggleFavFilter(event)">★ Preferiti</button>
+    <div class="filter-dropdown-wrap">
+      <button class="filter-funnel-btn" id="catalogFunnelBtn" onclick="toggleFilterDropdown('catalogFilterPanel',this)" title="Filtri">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4H21L14 12.5V19L10 21V12.5L3 4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="filter-dropdown-panel" id="catalogFilterPanel">
+        <div class="filter-section">
+          <span class="filter-section-label">Ordina</span>
+          <div class="filter-pill-row" id="catalogSortPills">
+            <button class="filter-pill active" data-value="eps" onclick="setCatalogSort('eps',this)">ep ↑</button>
+            <button class="filter-pill" data-value="title" onclick="setCatalogSort('title',this)">A–Z</button>
+            <button class="filter-pill" data-value="recent" onclick="setCatalogSort('recent',this)">Recenti</button>
+          </div>
+        </div>
+        <div class="filter-section">
+          <span class="filter-section-label">Filtra ep</span>
+          <div class="filter-dropdown-row">
+            <input class="ep-filter-input" type="number" id="epFilterInput" placeholder="es.12" min="1" oninput="renderCatalog()">
+            <span class="ep-filter-badge" id="epFilterBadge"></span>
+          </div>
+        </div>
+        <div class="filter-section">
+          <span class="filter-section-label">Preferiti</span>
+          <button class="fav-filter-btn" id="favFilterBtn" onclick="toggleFavFilter(event)" style="width:100%">★ Preferiti</button>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="stats-bar" id="catalogStats"></div>
 
@@ -1707,13 +1804,6 @@ input[type="number"] { -moz-appearance: textfield; }
 
 <!-- ===== FILM ===== -->
 <div class="section" id="film-section">
-  <div class="sec-header" style="margin-bottom:12px">
-    <h2 class="sec-title">Film</h2>
-    <div class="sec-btns">
-      <button class="btn btn-ghost btn-sm" onclick="openFilmSeriesManager()">🎬 Saghe</button>
-      <button class="add-btn" onclick="openAddFilmPopup()">＋ Aggiungi</button>
-    </div>
-  </div>
   <div class="stats-bar" id="filmStats"></div>
   <div class="search-row">
     <input class="search-input" type="text" placeholder="🔍 Cerca film…" id="filmSearch" oninput="renderFilms()">
@@ -1730,14 +1820,6 @@ input[type="number"] { -moz-appearance: textfield; }
 
 <!-- ===== PROGRAMMA ===== -->
 <div class="section" id="programma">
-  <div class="sec-header">
-    <h2 class="sec-title">Roadmap</h2>
-    <div class="sec-btns">
-      <button class="btn btn-ghost btn-sm" onclick="addRandom()">⚄ Random</button>
-      <button class="btn btn-sm" onclick="addRandom('DUB')">+D</button>
-      <button class="btn btn-sm" onclick="addRandom('SUB')">+S</button>
-    </div>
-  </div>
   <div class="stats-bar">
     <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
     <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
@@ -1750,32 +1832,45 @@ input[type="number"] { -moz-appearance: textfield; }
 
 <!-- ===== COMPLETATE ===== -->
 <div class="section" id="completate">
-  <div class="sec-header"><h2 class="sec-title">Completate</h2></div>
+  <div class="search-row">
+    <input class="search-input" placeholder="🔍 Cerca nelle completate…" id="completedSearch" oninput="renderCompleted()">
+    <div class="filter-dropdown-wrap">
+      <button class="filter-funnel-btn" id="completedFunnelBtn" onclick="toggleFilterDropdown('completedFilterPanel',this)" title="Filtri">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4H21L14 12.5V19L10 21V12.5L3 4Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="filter-dropdown-panel" id="completedFilterPanel">
+        <div class="filter-section">
+          <span class="filter-section-label">Tipo</span>
+          <div class="filter-pill-row" id="completedTypePills">
+            <button class="filter-pill active" data-value="all" onclick="setCompletedType('all',this)">Tutti</button>
+            <button class="filter-pill" data-value="DUB" onclick="setCompletedType('DUB',this)">DUB</button>
+            <button class="filter-pill" data-value="SUB" onclick="setCompletedType('SUB',this)">SUB</button>
+          </div>
+        </div>
+        <div class="filter-section">
+          <span class="filter-section-label">Ordina</span>
+          <div class="filter-pill-row" id="completedSortPills">
+            <button class="filter-pill active" data-value="recent" onclick="setCompletedSort('recent',this)">Recenti</button>
+            <button class="filter-pill" data-value="title" onclick="setCompletedSort('title',this)">A–Z</button>
+            <button class="filter-pill" data-value="eps_desc" onclick="setCompletedSort('eps_desc',this)">Ep ↓</button>
+            <button class="filter-pill" data-value="custom" onclick="setCompletedSort('custom',this)">✦ Custom</button>
+          </div>
+        </div>
+        <div class="filter-section">
+          <span class="filter-section-label">Filtra ep</span>
+          <div class="filter-dropdown-row">
+            <input class="ep-filter-input" type="number" id="completedEpFilter" placeholder="es.12" min="1" oninput="renderCompleted()">
+            <span class="ep-filter-badge" id="completedEpBadge"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="stats-bar">
     <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completed-count">0</strong></div>
     <div class="stat-pill"><span class="dot blue"></span> Ep visti: <strong id="total-eps">0</strong></div>
     <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 4px var(--dub-color)"></span> DUB: <strong id="completed-dub-count">0</strong></div>
     <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 4px var(--sub-color)"></span> SUB: <strong id="completed-sub-count">0</strong></div>
-  </div>
-  <div class="ep-filter-row">
-    <span class="ep-filter-label">Filtra ep</span>
-    <input class="ep-filter-input" type="number" id="completedEpFilter" placeholder="es.12" min="1" oninput="renderCompleted()">
-    <button class="ep-filter-clear" onclick="clearCompletedEpFilter()">✕ Reset</button>
-    <span class="ep-filter-badge" id="completedEpBadge"></span>
-  </div>
-  <div class="search-row">
-    <input class="search-input" placeholder="🔍 Cerca nelle completate…" id="completedSearch" oninput="renderCompleted()">
-    <select class="sort-select" id="completedTypeFilter" onchange="renderCompleted()">
-      <option value="all">Tutti</option>
-      <option value="DUB">DUB</option>
-      <option value="SUB">SUB</option>
-    </select>
-    <select class="sort-select" id="completedSort" onchange="renderCompleted()">
-      <option value="recent">Recenti</option>
-      <option value="title">A–Z</option>
-      <option value="eps_desc">Ep ↓</option>
-      <option value="custom">✦ Custom</option>
-    </select>
   </div>
   <div class="completed-grid" id="completed-list"></div>
 </div>
@@ -1800,40 +1895,6 @@ input[type="number"] { -moz-appearance: textfield; }
     <span class="tab-icon tab-icon-badge">DONE</span>
     <span>Completate</span>
   </button>
-  <div class="settings-wrap tab-btn-wrap">
-    <button class="tab-btn" id="settingsBtn" onclick="toggleSettingsDropdown()" title="Impostazioni">
-      <span class="tab-icon tab-icon-badge">SET</span>
-      <span>Impostazioni</span>
-    </button>
-    <div class="settings-dropdown" id="settingsDropdown">
-      <div class="sdb-theme-row">
-        <span class="sdb-theme-label">STILE</span>
-        <div class="sdb-theme-btns" id="sdbThemeBtns">
-          <button class="sdb-theme-dot theme-dark-dot" onclick="setTheme('dark')" data-theme="dark" title="Dark"></button>
-          <button class="sdb-theme-dot theme-light-dot" onclick="setTheme('light')" data-theme="light" title="Light"></button>
-          <button class="sdb-theme-dot theme-azure-dot" onclick="setTheme('azure')" data-theme="azure" title="Azure"></button>
-          <button class="sdb-theme-dot theme-purple-dot" onclick="setTheme('purple')" data-theme="purple" title="Purple"></button>
-          <button class="sdb-theme-dot theme-amber-dot" onclick="setTheme('amber')" data-theme="amber" title="Amber"></button>
-          <button class="sdb-theme-dot theme-neutral-dot" onclick="setTheme('neutral')" data-theme="neutral" title="Neutral"></button>
-        </div>
-      </div>
-      <div class="settings-dropdown-divider"></div>
-      <button class="settings-dropdown-btn" onclick="manualSync()">
-        <span class="sdb-icon">⟳</span>
-        <span>Sync</span>
-        <span class="sync-dot" id="syncDot" style="position:static;margin-left:auto"></span>
-      </button>
-      <div class="settings-dropdown-divider"></div>
-      <button class="settings-dropdown-btn" onclick="exportJSON()">
-        <span class="sdb-icon">↓</span>
-        <span>Esporta JSON</span>
-      </button>
-      <button class="settings-dropdown-btn" onclick="document.getElementById('importFile').click()">
-        <span class="sdb-icon">↑</span>
-        <span>Importa JSON</span>
-      </button>
-    </div>
-  </div>
 </nav>
 
 <!-- EDIT MODAL (serie anime) -->
@@ -1868,7 +1929,6 @@ input[type="number"] { -moz-appearance: textfield; }
       </div>
     </div>
     <div class="edit-modal-actions">
-      <button class="edit-modal-cancel" onclick="closeEditModal()">Annulla</button>
       <button class="edit-modal-save" onclick="saveEditModal()">✓ Salva</button>
     </div>
   </div>
@@ -1949,7 +2009,6 @@ input[type="number"] { -moz-appearance: textfield; }
       <div class="toggle-switch" id="addSeriesOngoing" onclick="this.classList.toggle('on')"></div>
     </div>
     <div class="popup-actions">
-      <button class="popup-cancel" onclick="closeAddSeriesPopup()">Annulla</button>
       <button class="popup-save" onclick="addSeries()">✓ Aggiungi</button>
     </div>
   </div>
@@ -1976,9 +2035,6 @@ input[type="number"] { -moz-appearance: textfield; }
       </div>
     </div>
     <div class="saga-manager-list" id="fsm-list"></div>
-    <div class="popup-actions">
-      <button class="popup-cancel" onclick="closeFilmSeriesManager()">Chiudi</button>
-    </div>
   </div>
 </div>
 
@@ -2017,7 +2073,6 @@ input[type="number"] { -moz-appearance: textfield; }
       <input class="popup-input" type="text" id="film-add-notes" placeholder="es. sequel di…">
     </div>
     <div class="popup-actions">
-      <button class="popup-cancel" onclick="closeAddFilmPopup()">Annulla</button>
       <button class="popup-save" onclick="addFilm()">✓ Aggiungi</button>
     </div>
   </div>
@@ -2057,7 +2112,6 @@ input[type="number"] { -moz-appearance: textfield; }
       <input class="popup-input" type="text" id="ef-notes" placeholder="es. sequel di…">
     </div>
     <div class="popup-actions">
-      <button class="popup-cancel" onclick="closeEditFilmPopup()">Annulla</button>
       <button class="popup-save" onclick="saveEditFilm()">✓ Salva</button>
     </div>
   </div>
@@ -2160,8 +2214,24 @@ function showSection(event,id){
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   event.currentTarget.classList.add('active');
+  document.querySelectorAll('.topbar-action').forEach(b=>{
+    b.style.display = (b.dataset.section===id) ? '' : 'none';
+  });
   renderAll();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ---- INLINE FILTER DROPDOWN ----
+function toggleFilterDropdown(panelId, btn){
+  const panel=document.getElementById(panelId);
+  const isOpen=panel.classList.contains('open');
+  document.querySelectorAll('.filter-dropdown-panel.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.filter-funnel-btn.active').forEach(b=>b.classList.remove('active'));
+  if(!isOpen){ panel.classList.add('open'); btn.classList.add('active'); }
+}
+function closeFilterDropdowns(){
+  document.querySelectorAll('.filter-dropdown-panel.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.filter-funnel-btn.active').forEach(b=>b.classList.remove('active'));
 }
 
 // ---- ADD SERIES POPUP ----
@@ -2214,8 +2284,15 @@ function addToRoadmap(id){
   db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,status:'normal',currentEp:0});
   save(); renderAll(); toast('Aggiunto alla roadmap ✓','success');
 }
+let _catalogSort = 'eps';
+function setCatalogSort(val,btn){
+  _catalogSort = val;
+  document.querySelectorAll('#catalogSortPills .filter-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCatalog();
+}
 function renderSortedSeries(list){
-  const sort=document.getElementById('catalogSort')?.value||'eps';
+  const sort=_catalogSort;
   return [...list].sort((a,b)=>{ if(sort==='title') return a.title.localeCompare(b.title); if(sort==='recent') return (b.addedAt||0)-(a.addedAt||0); return a.eps-b.eps||a.title.localeCompare(b.title); });
 }
 function renderList(id,data){
@@ -2628,11 +2705,24 @@ function renderDropped(){
 }
 
 // ---- COMPLETATE ----
-function clearCompletedEpFilter(){ document.getElementById('completedEpFilter').value=''; renderCompleted(); }
+let _completedSort = 'recent';
+let _completedType = 'all';
+function setCompletedSort(val,btn){
+  _completedSort = val;
+  document.querySelectorAll('#completedSortPills .filter-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCompleted();
+}
+function setCompletedType(val,btn){
+  _completedType = val;
+  document.querySelectorAll('#completedTypePills .filter-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCompleted();
+}
 function renderCompleted(){
   const q=(document.getElementById('completedSearch')?.value||'').toLowerCase();
-  const sort=document.getElementById('completedSort')?.value||'recent';
-  const typeFilter=document.getElementById('completedTypeFilter')?.value||'all';
+  const sort=_completedSort;
+  const typeFilter=_completedType;
   const epF=parseInt(document.getElementById('completedEpFilter')?.value)||0;
   const badge=document.getElementById('completedEpBadge');
   if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
@@ -2724,8 +2814,11 @@ function initDragDrop(container,dataArray,renderFn){
       if(newOrder.length===dataArray.length){
         dataArray.splice(0,dataArray.length,...newOrder);
         if(container.id==='completed-list'){
-          const sortEl=document.getElementById('completedSort');
-          if(sortEl&&sortEl.value!=='custom') sortEl.value='custom';
+          if(_completedSort!=='custom'){
+            _completedSort='custom';
+            document.querySelectorAll('#completedSortPills .filter-pill').forEach(b=>b.classList.remove('active'));
+            document.querySelector('#completedSortPills .filter-pill[data-value="custom"]')?.classList.add('active');
+          }
         }
         save();
       }
@@ -3274,6 +3367,7 @@ document.addEventListener('keydown', e=>{
     closeEditFilmPopup();
     closeFilmSeriesManager();
     closeSettingsDropdown();
+    closeFilterDropdowns();
   }
   if(e.key==='Enter'){
     if(document.getElementById('addSeriesPopup').classList.contains('open')){ addSeries(); }
@@ -3285,6 +3379,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('click', e => {
   if (_actionSheetOpen && !e.target.closest('#actionSheet')) closeActionSheet();
   if(!e.target.closest('.settings-wrap')) closeSettingsDropdown();
+  if(!e.target.closest('.filter-dropdown-wrap')) closeFilterDropdowns();
 });
 function closeAllEditDropdowns(){ closeEditModal(); }
 function clearEpFilter(){ document.getElementById('epFilterInput').value=''; renderCatalog(); }
