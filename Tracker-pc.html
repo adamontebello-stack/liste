@@ -2504,7 +2504,7 @@ function addToRoadmap(id){
   const s=db.series.find(x=>x.id===id);
   if(!s||s.inRoadmap){ toast('Già in roadmap','error'); return; }
   s.inRoadmap=true;
-  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,status:'normal',currentEp:0});
+  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,notes:s.notes||'',ongoing:!!s.ongoing,status:'normal',currentEp:0});
   save();
   // Rimuovi dal catalogo DOM
   const node=document.getElementById('item-'+id);
@@ -2633,7 +2633,7 @@ function addRandom(forceType){
   let r=Math.random()*total, picked=pool[pool.length-1];
   for(let i=0;i<pool.length;i++){ r-=weights[i]; if(r<=0){picked=pool[i];break;} }
   picked.inRoadmap=true;
-  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,status:'normal',currentEp:0});
+  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,notes:picked.notes||'',ongoing:!!picked.ongoing,status:'normal',currentEp:0});
   if(!forceType) db.patternIndex=(db.patternIndex+1)%PATTERN.length;
   save();
   // Rimuovi dalla lista catalogo DOM
@@ -2766,7 +2766,7 @@ function backToRoadmap_fromCompleted(id){
   const item=db.completed.splice(idx,1)[0];
   item.status='normal'; delete item.completedAt;
   db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,inRoadmap:true,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
   save(); renderRoadmap(); renderCompleted(); toast(`Riportato in roadmap: ${item.title}`,'success');
 }
 function backToCalatogo_fromRoadmap(id){
@@ -2775,14 +2775,14 @@ function backToCalatogo_fromRoadmap(id){
   const item=db.roadmap.splice(idx,1)[0];
   const existing=db.series.find(s=>s.id===item.id);
   if(existing) existing.inRoadmap=false;
-  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,inRoadmap:false,addedAt:Date.now()});
+  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
   save(); renderRoadmap(); renderCatalog(); toast(`${item.title} torna in catalogo`,'info');
 }
 function backToCatalogo_fromDropped(id){
   const idx=db.dropped.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,inRoadmap:false,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
   save(); renderDropped(); renderCatalog(); toast(`${item.title} ripristinato in catalogo`,'info');
 }
 function restoreDropped(id){
@@ -2790,7 +2790,7 @@ function restoreDropped(id){
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
   item.status='normal'; db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,inRoadmap:true,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
   save(); renderRoadmap(); renderDropped(); toast(`Ripristinato in roadmap: ${item.title}`,'success');
 }
 
@@ -3091,6 +3091,15 @@ function getAnimeSagas(){
     }
   });
   return result.sort((a,b)=>a.title.localeCompare(b.title));
+}
+
+// Cerca il titolo di una serie (anime) per id in QUALSIASI lista, anche se
+// il campo "films" non è (più) valorizzato — usato come fallback per non
+// mostrare mai "Saga rimossa" quando la serie esiste ancora da qualche parte.
+function findAnySeriesTitleById(id){
+  const all = [...db.series, ...db.roadmap, ...db.completed, ...db.dropped];
+  const found = all.find(s=>s.id===id);
+  return found ? found.title : null;
 }
 
 // Returns film sagas (db.filmSeries) that are not full, plus the current one if editing
@@ -3456,7 +3465,7 @@ function renderFilms(){
     const fsFilms = byFranchise[fsId];
     if(!fsFilms) return;
     const saga = allSeriesMap[fsId];
-    const fsName = saga ? saga.title : 'Saga rimossa';
+    const fsName = saga ? saga.title : (findAnySeriesTitleById(fsId) || 'Saga rimossa');
     const allSagaFilms = [...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===fsId);
     const totalSagaFilms = allSagaFilms.length;
 
@@ -3518,12 +3527,13 @@ function renderFilmsCompleted(){
   getAnimeSagas().forEach(s=>{ if(!allSeriesMap2[s.id]) allSeriesMap2[s.id]=s; });
   container.innerHTML = films.map((f,i)=>{
     const saga = f.seriesId ? allSeriesMap2[f.seriesId] : null;
-    const ordStr = (saga && f.seriesOrder) ? `${getOrdinal(f.seriesOrder)} · ` : '';
+    const sagaTitle = saga ? saga.title : (f.seriesId ? findAnySeriesTitleById(f.seriesId) : null);
+    const ordStr = (sagaTitle && f.seriesOrder) ? `${getOrdinal(f.seriesOrder)} · ` : '';
     return `<div class="film-completed-item" style="animation:itemIn .22s ${i*0.04}s both">
       <div class="check-mark">✓</div>
       <div class="c-info">
         <div class="c-title">${f.title}</div>
-        <div class="film-completed-saga">${saga ? `${saga.title} · ${ordStr}` : ''}${new Date(f.completedAt).toLocaleDateString('it-IT')}</div>
+        <div class="film-completed-saga">${sagaTitle ? `${sagaTitle} · ${ordStr}` : ''}${new Date(f.completedAt).toLocaleDateString('it-IT')}</div>
       </div>
       <span class="badge ${f.type.toLowerCase()}">${f.type}</span>
       <div class="c-actions" style="opacity:1">
