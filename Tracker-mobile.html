@@ -2897,14 +2897,13 @@ function renderAll(){ renderCatalog(); renderRoadmap(); renderDropped(); renderC
 // ========== FILM SECTION ==========
 
 // ---- Lookup helpers ----
-// Returns {id, title, count, _source} — searches filmSeries first, then anime series
+// Returns {id, title, count, _source} — searches filmSeries first, then anime series in ALL lists
 function getSeriesRecord(id){
   if(!id) return null;
   const fs=(db.filmSeries||[]).find(x=>x.id===id);
   if(fs) return {id:fs.id, title:fs.title, count:fs.count, _source:'film'};
-  // search anime series (roadmap + dropped + completed + catalog)
-  const allSeries=[...db.series, ...db.roadmap.map(r=>({id:r.id,title:r.title,films:r.films||0})), ...db.dropped.map(r=>({id:r.id,title:r.title,films:r.films||0})), ...db.completed.map(r=>({id:r.id,title:r.title,films:r.films||0}))];
-  const found=db.series.find(s=>s.id===id);
+  // search anime series in ALL lists (catalog, roadmap, completed, dropped)
+  const found=[...db.series, ...db.roadmap, ...db.completed, ...db.dropped].find(s=>s.id===id);
   if(found) return {id:found.id, title:found.title, count:found.films||0, _source:'anime'};
   return null;
 }
@@ -2913,11 +2912,7 @@ function getSeriesRecord(id){
 function getAnimeSagas(){
   const seen=new Set();
   const result=[];
-  const allSeries=[...db.series, ...[...db.roadmap,...db.dropped,...db.completed].map(r=>{
-    const s=db.series.find(x=>x.id===r.id)||{id:r.id,title:r.title,films:0};
-    return s;
-  })];
-  allSeries.forEach(s=>{
+  [...db.series, ...db.roadmap, ...db.completed, ...db.dropped].forEach(s=>{
     if(!seen.has(s.id)&&(s.films||0)>=1){
       seen.add(s.id);
       result.push({id:s.id, title:s.title, count:s.films, _source:'anime'});
