@@ -264,6 +264,7 @@ main {
   padding-bottom: calc(72px + var(--safe-bottom));
   max-width: 480px;
   margin: 0 auto;
+  min-height: calc(100dvh - 42px - env(safe-area-inset-top));
 }
 .section { display: none; animation: fadeUp 0.28s cubic-bezier(0.2,0.8,0.3,1); }
 .section.active { display: block; }
