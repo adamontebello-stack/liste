@@ -1955,9 +1955,23 @@ main {
     </div>
 
     <!-- CATALOGO FILM -->
+    <div id="film-catalog-header">
+      <div class="stats-bar" id="filmStats" style="margin-bottom:0.8rem;"></div>
+    </div>
     <div id="film-catalog-container"></div>
 
     <!-- FILM COMPLETATI -->
+    <div id="film-completed-header"></div>
+    <div class="search-row search-row-compact" id="film-completed-search-row" style="margin-bottom:0.75rem">
+      <input class="search-input" type="text" placeholder="Cerca nei film completati…" id="filmCompletedSearch" oninput="renderFilmsCompleted()">
+      <select class="sort-select" id="filmCompletedSort" onchange="renderFilmsCompleted()">
+        <option value="recent">Recenti</option>
+        <option value="title">A–Z</option>
+      </select>
+    </div>
+    <div id="film-completed-container"></div>
+
+    <!-- (vecchio blocco, non più usato) FILM COMPLETATI -->
   </div>
 </div>
 
@@ -3778,14 +3792,20 @@ function toggleFranchiseCollapse(fsId){
   if(block) block.classList.toggle('collapsed');
 }
 
-function renderFilmsCompleted(){
-  const q = (document.getElementById('filmCompletedSearch')?.value||'').toLowerCase();
-  const sort = document.getElementById('filmCompletedSort')?.value||'recent';
+function renderFilmsCompletedInto(searchId, sortId, containerId, countId){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+
+  const q = (document.getElementById(searchId)?.value||'').toLowerCase();
+  const sort = document.getElementById(sortId)?.value||'recent';
   let films = (db.filmsCompleted||[]).filter(f=> !q || f.title.toLowerCase().includes(q));
   films.sort((a,b)=> sort==='recent' ? (b.completedAt||0)-(a.completedAt||0) : a.title.localeCompare(b.title));
 
-  const container = document.getElementById('film-completed-container');
-  if(!container) return;
+  if(countId){
+    const countEl = document.getElementById(countId);
+    if(countEl) countEl.textContent = films.length;
+  }
+
   if(!films.length){ container.innerHTML=`<div class="empty">Nessun film completato</div>`; return; }
 
   const allSeriesMap2 = {};
@@ -3808,6 +3828,13 @@ function renderFilmsCompleted(){
       </div>
     </div>`;
   }).join('');
+}
+
+function renderFilmsCompleted(){
+  // Vista dentro Catalogo → Film → tab "Completati"
+  renderFilmsCompletedInto('filmCompletedSearch','filmCompletedSort','film-completed-container');
+  // Vista dedicata Completate → Film completati
+  renderFilmsCompletedInto('completateFilmSearch','completateFilmSort','completate-film-list','completate-film-count');
 }
 
 
