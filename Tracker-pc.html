@@ -268,6 +268,30 @@ header .logo { display: none; }
   right: auto;
 }
 
+/* ===== MINI SIDEBAR (Completate: Serie/Film) ===== */
+.mini-sidebar-nav {
+  position: fixed;
+  top: 50%;
+  left: 84px;
+  transform: translateY(-50%);
+  z-index: 129;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 6px;
+  box-shadow: var(--shadow-sm), inset 0 2px 8px rgba(0,0,0,0.2);
+}
+.mini-sidebar-nav .nav-btn.icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; padding: 0;
+}
+@media (max-width: 900px) {
+  .mini-sidebar-nav { display: none !important; }
+}
+
 /* ===== SUB-NAV (Catalogo: Serie/Film) ===== */
 .subnav {
   display: flex; justify-content: center; gap: 5px;
@@ -507,7 +531,7 @@ input[type="number"] {
 
 /* ===== MAIN ===== */
 main {
-  padding: 1.4rem 1.1rem 2rem;
+  padding: 1.4rem 1.1rem 0.8rem;
   max-width: 1160px;
   margin: auto;
   position: relative; z-index: 1;
@@ -651,6 +675,40 @@ main {
 .catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1050px; margin: 0 auto; }
 @media (max-width: 700px) { .catalog-grid { grid-template-columns: 1fr; } }
 
+/* Serie tab: header (search+stats) stays in normal flow, grid fills exactly the remaining viewport height */
+#catalog-serie-subtab {
+  display: flex;
+  flex-direction: column;
+  height: calc(108vh - 65px - 1.0rem - 2rem);
+}
+.serie-sticky-head {
+  flex: 0 0 auto;
+  background: transparent;
+}
+
+/* Dub/Sub columns scroll independently instead of scrolling the whole page */
+.catalog-grid-scroll { align-items: stretch; flex: 1 1 auto; min-height: 0; margin-bottom: 6px; grid-template-rows: 1fr;}
+.catalog-grid-scroll .column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 515px;
+}
+.catalog-grid-scroll .column .list {
+  overflow-y: auto;
+  scrollbar-width:none;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+@media (max-width: 700px) {
+  #catalog-serie-subtab { height: auto; }
+  .catalog-grid-scroll { flex: initial; grid-template-rows: none; }
+  .catalog-grid-scroll .column { height: auto; max-height: none; }
+  .catalog-grid-scroll .column .list { overflow-y: visible; }
+  .serie-sticky-head { position: static; }
+}
+
 .column {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -667,6 +725,7 @@ main {
   padding: 1rem 1.3rem;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
+  flex: 0 0 auto;
 }
 .column-title { display: flex; align-items: center; gap: 9px; }
 .column-title h3 { font-size: 0.88rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -728,6 +787,10 @@ main {
   font-size: 0.78rem;
   transition: all 0.18s cubic-bezier(0.34,1.4,0.64,1);
   display: flex; align-items: center; justify-content: center;
+}
+.rm-actions .item-btn {
+  background: transparent;
+  border: 1px solid #000;
 }
 .item-btn:hover {
   background: var(--accent);
@@ -799,29 +862,37 @@ main {
   font-family: 'DM Mono', monospace;
 }
 
-.progress-row { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
-.progress-bar { flex: 1; height: 4px; background: var(--surface3); border-radius: 9px; overflow: hidden; }
-.progress-fill {
+.progress-bottom {
+  position: absolute;
+  left: 3px; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--surface3);
+  pointer-events: none;
+  z-index: 1;
+}
+.progress-bottom-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent), var(--accent2));
   transition: width 0.4s cubic-bezier(0.34,1.2,0.64,1);
-  border-radius: 9px;
   box-shadow: 0 0 6px var(--accentGlow);
 }
 .ep-input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text); width: 50px;
-  padding: 5px 4px; border-radius: 9px;
-  font-family: 'DM Mono', monospace; text-align: center;
-  font-size: 0.8rem;
-  transition: border-color 0.2s;
+  background: transparent;
+  border: none;
+  color: var(--text); width: 22px;
+  padding: 0; border-radius: 0;
+  font-family: 'DM Mono', monospace; text-align: right;
+  font-size: 0.76rem; font-weight: 700;
+  transition: color 0.2s;
+  -moz-appearance: textfield;
 }
-.ep-input:focus { border-color: var(--accent); outline: none; }
-.progress-num { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); }
+.ep-input::-webkit-outer-spin-button, .ep-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ep-input:focus { color: var(--accent2); outline: none; }
+.ep-total { font-family: 'DM Mono', monospace; font-size: 0.76rem; color: var(--muted2); }
 
-.rm-actions, .c-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
-.rm-item:hover .rm-actions, .completed-item:hover .c-actions { opacity: 1; }
+.rm-actions { display: flex; gap: 6px; opacity: 1; }
+.c-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
+.completed-item:hover .c-actions { opacity: 1; }
 
 .watching-tag {
   font-size: 0.57rem; font-weight: 700;
@@ -1128,29 +1199,37 @@ main {
 }
 
 /* ===== STEP ARROWS for ep-input ===== */
-.ep-stepper { display: flex; align-items: center; gap: 6px; }
+.ep-stepper {
+  display: flex; align-items: center; gap: 0;
+  background: transparent;
+  backdrop-filter: blur(12px);
+
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #000;
+  border-radius: 9px;
+  padding: 2px;
+  flex-shrink: 0;
+}
 .step-btn {
-  background: var(--surface3);
-  border: 1px solid var(--border2);
-  color: var(--accent2);
-  width: 28px; height: 28px;
-  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  width: 22px; height: 22px;
+  border-radius: 7px;
   cursor: pointer;
-  font-size: 1rem; line-height: 1;
+  font-size: 0.9rem; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.18s cubic-bezier(0.34,1.4,0.64,1);
   flex-shrink: 0;
   user-select: none;
 }
 .step-btn:hover {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: rgba(255,255,255,0.14);
   color: white;
-  box-shadow: 0 3px 10px var(--accentGlow);
-  transform: translateY(-1px) scale(1.08);
+  transform: scale(1.08);
 }
-.step-btn:active { transform: translateY(0) scale(1); }
-@media (max-width:700px) { .step-btn { width:34px; height:34px; font-size:1.1rem; } }
+.step-btn:active { transform: scale(1); }
+@media (max-width:700px) { .step-btn { width:28px; height:28px; font-size:1rem; } }
 
 /* ===== REORDER ARROWS for roadmap/completed ===== */
 .reorder-btns { display: flex; flex-direction: column; gap: 2px; }
@@ -1176,6 +1255,20 @@ main {
 @media (max-width:700px) {
   .reorder-btn { width:30px; height:28px; font-size:0.9rem; }
 }
+
+/* ===== ROADMAP REORDER MODE (sezione Programma) ===== */
+#roadmap:not(.reorder-mode) .rm-item .drag-handle,
+#roadmap:not(.reorder-mode) .rm-item .reorder-btns {
+  display: none !important;
+}
+#roadmap.reorder-mode .rm-item { cursor: default; }
+#roadmap.reorder-mode .rm-item .rm-actions,
+#roadmap.reorder-mode .rm-item .ep-stepper,
+#roadmap.reorder-mode .rm-item .ep-input {
+  pointer-events: none;
+  opacity: 0.35;
+}
+#roadmap.reorder-mode .rm-item .drag-handle { opacity: 0.8; }
 
 /* ===== EDIT MODAL POPUP for catalog items ===== */
 .edit-modal-overlay {
@@ -1365,6 +1458,9 @@ main {
 .film-franchise-block.collapsed .film-franchise-collapse-icon { transform: rotate(-90deg); }
 .film-franchise-list { display: block; }
 .film-franchise-block.collapsed .film-franchise-list { display: none; }
+
+.film-group { margin-bottom: 6px; }
+.film-group .section-label { margin: 0.2rem 0 0.6rem; }
 
 .film-standalone-block {
   background: var(--surface);
@@ -1704,6 +1800,16 @@ main {
   font-family: 'DM Mono', monospace;
   flex-shrink: 0;
 }
+.film-franchise-completed-tag {
+  font-size: 0.57rem; font-weight: 700;
+  color: #04140c;
+  background: var(--green);
+  border: 1px solid var(--green);
+  padding: 2px 8px; border-radius: 30px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  font-family: 'DM Mono', monospace;
+  flex-shrink: 0;
+}
 
 </style>
 </head>
@@ -1711,9 +1817,13 @@ main {
 
 <!-- ===== VERTICAL SIDEBAR NAV ===== -->
 <nav class="sidebar-nav">
-  <button class="nav-btn active icon-btn" onclick="showSection(event,'catalogo')" title="Catalogo">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6.00067L21 6.00139M8 12.0007L21 12.0015M8 18.0007L21 18.0015M3.5 6H3.51M3.5 12H3.51M3.5 18H3.51M4 6C4 6.27614 3.77614 6.5 3.5 6.5C3.22386 6.5 3 6.27614 3 6C3 5.72386 3.22386 5.5 3.5 5.5C3.77614 5.5 4 5.72386 4 6ZM4 12C4 12.2761 3.77614 12.5 3.5 12.5C3.22386 12.5 3 12.2761 3 12C3 11.7239 3.22386 11.5 3.5 11.5C3.77614 11.5 4 11.7239 4 12ZM4 18C4 18.2761 3.77614 18.5 3.5 18.5C3.22386 18.5 3 18.2761 3 18C3 17.7239 3.22386 17.5 3.5 17.5C3.77614 17.5 4 17.7239 4 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <button class="nav-btn active icon-btn" onclick="showCatalogTab(event,'serie')" title="Serie">
+    <svg width="18" height="18" viewBox="0 0 50 50" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1,38h23v3H12v2h26v-2H26v-3h23V8H1V38z M3,10h44v26H3V10z"></path></svg>
   </button>
+  <button class="nav-btn icon-btn" onclick="showCatalogTab(event,'film')" title="Film">
+    <svg width="18" height="18" viewBox="0 0 470.042 470.042" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M465.184,392.903c-8.055-10.378-22.615-12.532-32.98-4.478c-1.471,0.93-15.227,8.366-40.059-16.233 c-2.633-2.604-5.375-4.693-8.086-6.94c-9.402,12.934-20.09,24.801-31.926,35.504c2.201,1.627,4.432,3.16,6.522,5.236 c55.875,55.363,100.102,22.027,101.928,20.603C470.963,418.524,473.254,403.266,465.184,392.903z"></path><path d="M198.219,32.203C88.73,32.203,0,120.948,0,230.421c0,109.457,88.73,198.218,198.219,198.218 c109.457,0,198.203-88.761,198.203-198.218C396.422,120.948,307.676,32.203,198.219,32.203z M198.219,79.078 c28.223,0,51.088,22.895,51.088,51.104c0,28.224-22.865,51.102-51.088,51.102c-28.225,0-51.103-22.878-51.103-51.102 C147.115,101.972,169.994,79.078,198.219,79.078z M221.934,231.754c0,13.105-10.627,23.731-23.715,23.731 c-13.105,0-23.732-10.626-23.732-23.731c0-13.106,10.627-23.732,23.732-23.732C211.307,208.022,221.934,218.648,221.934,231.754z M96.631,282.858c-28.225,0-51.088-22.881-51.088-51.103c0-28.225,22.863-51.089,51.088-51.089s51.102,22.864,51.102,51.089 C147.732,259.977,124.855,282.858,96.631,282.858z M198.219,384.43c-28.225,0-51.103-22.864-51.103-51.088 c0-28.225,22.879-51.104,51.103-51.104c28.223,0,51.088,22.88,51.088,51.104C249.307,361.566,226.441,384.43,198.219,384.43z M299.791,282.858c-28.225,0-51.105-22.881-51.105-51.103c0-28.225,22.881-51.089,51.105-51.089 c28.207,0,51.104,22.864,51.104,51.089C350.895,259.977,327.998,282.858,299.791,282.858z"></path></svg>
+  </button>
+  <div class="sidebar-nav-sep"></div>
   <button class="nav-btn icon-btn" onclick="showSection(event,'programma')" title="Programma">
     <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"><path d="M3 8h7m25 16a8 8 0 1 0 0-16H20m-7 32a8 8 0 1 1 0-16h12m-2 16h12M10 8a5 5 0 1 0 10 0a5 5 0 1 0-10 0"/><path d="M13 40a5 5 0 1 0 10 0a5 5 0 1 0-10 0m12-16a5 5 0 1 0 10 0a5 5 0 1 0-10 0m10.269 20.408c.08.494.555.726 1.017.535c.817-.338 2.273-.997 4.479-2.188c1.477-.798 2.45-1.436 3.085-1.916c.793-.598.794-1.57 0-2.169c-.635-.48-1.608-1.118-3.085-1.915c-2.206-1.19-3.662-1.85-4.479-2.188c-.462-.192-.936.041-1.017.535c-.128.776-.269 2.19-.269 4.653s.141 3.877.269 4.653"/></g></svg>
   </button>
@@ -1756,6 +1866,16 @@ main {
   </div>
 </nav>
 
+<!-- ===== MINI SIDEBAR NAV (Completate: Serie/Film) — top-level so it's not affected by section fade animation ===== -->
+<nav class="mini-sidebar-nav" id="completateMiniNav" style="display:none">
+  <button class="nav-btn icon-btn active" id="completateTabSerieBtn" onclick="showCompletateTab(event,'serie')" title="Serie completate">
+    <svg width="18" height="18" viewBox="0 0 50 50" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1,38h23v3H12v2h26v-2H26v-3h23V8H1V38z M3,10h44v26H3V10z"></path></svg>
+  </button>
+  <button class="nav-btn icon-btn" id="completateTabFilmBtn" onclick="showCompletateTab(event,'film')" title="Film completati">
+    <svg width="18" height="18" viewBox="0 0 470.042 470.042" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M465.184,392.903c-8.055-10.378-22.615-12.532-32.98-4.478c-1.471,0.93-15.227,8.366-40.059-16.233 c-2.633-2.604-5.375-4.693-8.086-6.94c-9.402,12.934-20.09,24.801-31.926,35.504c2.201,1.627,4.432,3.16,6.522,5.236 c55.875,55.363,100.102,22.027,101.928,20.603C470.963,418.524,473.254,403.266,465.184,392.903z"></path><path d="M198.219,32.203C88.73,32.203,0,120.948,0,230.421c0,109.457,88.73,198.218,198.219,198.218 c109.457,0,198.203-88.761,198.203-198.218C396.422,120.948,307.676,32.203,198.219,32.203z M198.219,79.078 c28.223,0,51.088,22.895,51.088,51.104c0,28.224-22.865,51.102-51.088,51.102c-28.225,0-51.103-22.878-51.103-51.102 C147.115,101.972,169.994,79.078,198.219,79.078z M221.934,231.754c0,13.105-10.627,23.731-23.715,23.731 c-13.105,0-23.732-10.626-23.732-23.731c0-13.106,10.627-23.732,23.732-23.732C211.307,208.022,221.934,218.648,221.934,231.754z M96.631,282.858c-28.225,0-51.088-22.881-51.088-51.103c0-28.225,22.863-51.089,51.088-51.089s51.102,22.864,51.102,51.089 C147.732,259.977,124.855,282.858,96.631,282.858z M198.219,384.43c-28.225,0-51.103-22.864-51.103-51.088 c0-28.225,22.879-51.104,51.103-51.104c28.223,0,51.088,22.88,51.088,51.104C249.307,361.566,226.441,384.43,198.219,384.43z M299.791,282.858c-28.225,0-51.105-22.881-51.105-51.103c0-28.225,22.881-51.089,51.105-51.089 c28.207,0,51.104,22.864,51.104,51.089C350.895,259.977,327.998,282.858,299.791,282.858z"></path></svg>
+  </button>
+</nav>
+
 <!-- ===== FIXED TOP-RIGHT ACTION PANEL ===== -->
 <div class="fixed-action-panel" id="catalogo-fap" style="display:flex">
   <div class="fap-buttons" id="catalogo-fap-serie-buttons">
@@ -1776,30 +1896,26 @@ main {
 <main>
 <!-- ===== CATALOGO ===== -->
 <div class="section active" id="catalogo">
-  <!-- Sub-nav Catalogo: Serie / Film -->
-  <div class="subnav">
-    <button class="nav-btn active" onclick="showCatalogSubTab(event,'serie')">SERIE</button>
-    <button class="nav-btn" onclick="showCatalogSubTab(event,'film')">FILM</button>
-  </div>
-
   <!-- ===== SERIE SUBTAB ===== -->
   <div id="catalog-serie-subtab">
-    <div class="search-row search-row-compact" style="margin-bottom:0.6rem">
-      <input class="search-input" type="text" placeholder="Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalog()">
-      <div class="ep-filter-row">
-        <div class="ep-filter-wrap">
-          <input class="ep-filter-input" type="number" id="epFilterInput" min="1" placeholder="EP" oninput="toggleEpClear(this,'epFilterClear');renderCatalog()">
-          <button class="ep-filter-clear" id="epFilterClear" onclick="clearEpFilter()">✕</button>
+    <div class="serie-sticky-head">
+      <div class="search-row search-row-compact" style="margin-bottom:0.6rem">
+        <input class="search-input" type="text" placeholder="Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalog()">
+        <div class="ep-filter-row">
+          <div class="ep-filter-wrap">
+            <input class="ep-filter-input" type="number" id="epFilterInput" min="1" placeholder="EP" oninput="toggleEpClear(this,'epFilterClear');renderCatalog()">
+            <button class="ep-filter-clear" id="epFilterClear" onclick="clearEpFilter()">✕</button>
+          </div>
         </div>
+        <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
+          <option value="eps">ep ↑</option>
+          <option value="title">A–Z</option>
+          <option value="recent">Recenti</option>
+        </select>
       </div>
-      <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
-        <option value="eps">ep ↑</option>
-        <option value="title">A–Z</option>
-        <option value="recent">Recenti</option>
-      </select>
+      <div class="stats-bar" id="catalogStats" style="margin-bottom:0.8rem;"><span class="ep-filter-badge" id="epFilterBadge"></span></div>
     </div>
-    <div class="stats-bar" id="catalogStats" style="margin-bottom:1rem;"><span class="ep-filter-badge" id="epFilterBadge"></span></div>
-    <div class="catalog-grid">
+    <div class="catalog-grid catalog-grid-scroll">
       <div class="column col-dub">
         <div class="column-header">
           <div class="column-title"><span class="badge dub">DUB</span><h3>Doppiato</h3></div>
@@ -1866,6 +1982,9 @@ main {
       <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
       <div class="stat-pill"><span class="dot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2)"></span> Watching: <strong id="watching-count">0</strong></div>
     </div>
+    <div class="stats-bar" style="margin-bottom:0.6rem; justify-content:flex-end;" id="roadmapReorderBar">
+      <button class="btn btn-ghost btn-sm" onclick="toggleRoadmapReorderMode()">⇅ Riordina</button>
+    </div>
   </div>
   <div class="roadmap" id="roadmap"></div>
   <div class="section-label" id="dropped-label" style="display:none; margin: 0.8rem 0 0.3rem;">Droppate</div>
@@ -1874,34 +1993,52 @@ main {
 
 <!-- ===== COMPLETATE ===== -->
 <div class="section" id="completate">
-  <div class="search-row search-row-compact">
-    <input class="search-input" placeholder="Cerca nelle completate…" id="completedSearch" oninput="renderCompleted()">
-    <div class="ep-filter-row">
-      <div class="ep-filter-wrap">
-        <input class="ep-filter-input" type="number" id="completedEpFilter" min="1" placeholder="EP" oninput="toggleEpClear(this,'completedEpClear');renderCompleted()">
-        <button class="ep-filter-clear" id="completedEpClear" onclick="clearCompletedEpFilter()">✕</button>
+  <!-- SERIE completate -->
+  <div id="completate-serie-view">
+    <div class="search-row search-row-compact">
+      <input class="search-input" placeholder="Cerca nelle completate…" id="completedSearch" oninput="renderCompleted()">
+      <div class="ep-filter-row">
+        <div class="ep-filter-wrap">
+          <input class="ep-filter-input" type="number" id="completedEpFilter" min="1" placeholder="EP" oninput="toggleEpClear(this,'completedEpClear');renderCompleted()">
+          <button class="ep-filter-clear" id="completedEpClear" onclick="clearCompletedEpFilter()">✕</button>
+        </div>
       </div>
+      <select class="sort-select" id="completedTypeFilter" onchange="renderCompleted()">
+        <option value="all">Tutti</option>
+        <option value="DUB">Solo DUB</option>
+        <option value="SUB">Solo SUB</option>
+      </select>
+      <select class="sort-select" id="completedSort" onchange="renderCompleted()">
+        <option value="recent">Recenti</option>
+        <option value="title">A–Z</option>
+        <option value="eps_desc">Ep ↓</option>
+        <option value="custom">⠿ Personalizzato</option>
+      </select>
     </div>
-    <select class="sort-select" id="completedTypeFilter" onchange="renderCompleted()">
-      <option value="all">Tutti</option>
-      <option value="DUB">Solo DUB</option>
-      <option value="SUB">Solo SUB</option>
-    </select>
-    <select class="sort-select" id="completedSort" onchange="renderCompleted()">
-      <option value="recent">Recenti</option>
-      <option value="title">A–Z</option>
-      <option value="eps_desc">Ep ↓</option>
-      <option value="custom">⠿ Personalizzato</option>
-    </select>
+    <div class="stats-bar" style="margin-bottom:1rem;">
+      <div class="stat-pill"><span class="dot blue"></span> Ep Totali: <strong id="total-eps">0</strong></div>
+      <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completed-count">0</strong></div>
+      <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 5px var(--dub-color)"></span> DUB: <strong id="completed-dub-count">0</strong></div>
+      <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 5px var(--sub-color)"></span> SUB: <strong id="completed-sub-count">0</strong></div>
+      <span class="ep-filter-badge" id="completedEpBadge"></span>
+    </div>
+    <div class="completed-grid" id="completed-list"></div>
   </div>
-  <div class="stats-bar" style="margin-bottom:1rem;">
-    <div class="stat-pill"><span class="dot blue"></span> Ep Totali: <strong id="total-eps">0</strong></div>
-    <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completed-count">0</strong></div>
-    <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 5px var(--dub-color)"></span> DUB: <strong id="completed-dub-count">0</strong></div>
-    <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 5px var(--sub-color)"></span> SUB: <strong id="completed-sub-count">0</strong></div>
-    <span class="ep-filter-badge" id="completedEpBadge"></span>
+
+  <!-- FILM completati -->
+  <div id="completate-film-view" style="display:none">
+    <div class="search-row search-row-compact">
+      <input class="search-input" type="text" placeholder="Cerca nei film completati…" id="completateFilmSearch" oninput="renderFilmsCompleted()">
+      <select class="sort-select" id="completateFilmSort" onchange="renderFilmsCompleted()">
+        <option value="recent">Recenti</option>
+        <option value="title">A–Z</option>
+      </select>
+    </div>
+    <div class="stats-bar" style="margin-bottom:1rem;" id="completateFilmStats">
+      <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completate-film-count">0</strong></div>
+    </div>
+    <div class="completed-grid" id="completate-film-list"></div>
   </div>
-  <div class="completed-grid" id="completed-list"></div>
 </div>
 
 </main>
@@ -2196,13 +2333,16 @@ function toast(msg,type='info'){ const t=document.getElementById('toast'); t.tex
 function showSection(event,id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.sidebar-nav .nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav .nav-btn, .mini-sidebar-nav .nav-btn').forEach(b=>b.classList.remove('active'));
   event.currentTarget.classList.add('active');
   // Toggle fixed action panels
   ['catalogo','programma','completate'].forEach(s=>{
     const p=document.getElementById(s+'-fap');
     if(p) p.style.display = (s===id) ? 'flex' : 'none';
   });
+  // Toggle mini sidebar (Completate)
+  const miniNav=document.getElementById('completateMiniNav');
+  if(miniNav) miniNav.style.display = (id==='completate') ? 'flex' : 'none';
   // Render only the section being shown
   if(id==='catalogo'){ renderCatalog(); renderFilms(); renderFilmsCompleted(); }
   else if(id==='programma'){ renderRoadmap(); renderDropped(); }
@@ -2213,20 +2353,40 @@ function showSection(event,id){
       const sel=document.getElementById('completedSort');
       if(sel) sel.value=savedSort;
     }
-    renderCompleted();
+    // Preseleziona sempre "Serie completate" all'apertura della sezione
+    showCompletateTab(null,'serie');
   }
 }
 
-// ---- CATALOG SUBTABS (Serie / Film) ----
-function showCatalogSubTab(event,tab){
-  document.querySelectorAll('#catalogo .subnav .nav-btn').forEach(b=>b.classList.remove('active'));
+// ---- CATALOG TABS (Serie / Film) — now controlled from the main sidebar ----
+function showCatalogTab(event,tab){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('catalogo').classList.add('active');
+  document.querySelectorAll('.sidebar-nav .nav-btn, .mini-sidebar-nav .nav-btn').forEach(b=>b.classList.remove('active'));
   event.currentTarget.classList.add('active');
+  ['catalogo','programma','completate'].forEach(s=>{
+    const p=document.getElementById(s+'-fap');
+    if(p) p.style.display = (s==='catalogo') ? 'flex' : 'none';
+  });
+  const miniNav=document.getElementById('completateMiniNav');
+  if(miniNav) miniNav.style.display='none';
   document.getElementById('catalog-serie-subtab').style.display = tab==='serie' ? '' : 'none';
   document.getElementById('catalog-film-subtab').style.display = tab==='film' ? '' : 'none';
   document.getElementById('catalogo-fap-serie-buttons').style.display = tab==='serie' ? '' : 'none';
   document.getElementById('catalogo-fap-film-buttons').style.display = tab==='film' ? '' : 'none';
   if(tab==='film'){ renderFilms(); renderFilmsCompleted(); }
   else { renderCatalog(); }
+}
+
+// ---- COMPLETATE TABS (Serie / Film) — mini sidebar accanto alla sidebar principale ----
+function showCompletateTab(event,tab){
+  document.querySelectorAll('.mini-sidebar-nav .nav-btn').forEach(b=>b.classList.remove('active'));
+  const btn = event ? event.currentTarget : document.getElementById(tab==='film' ? 'completateTabFilmBtn' : 'completateTabSerieBtn');
+  if(btn) btn.classList.add('active');
+  document.getElementById('completate-serie-view').style.display = tab==='serie' ? '' : 'none';
+  document.getElementById('completate-film-view').style.display = tab==='film' ? '' : 'none';
+  renderCompleted();
+  renderFilmsCompleted();
 }
 
 // ---- ADD SERIES MODAL ----
@@ -2690,9 +2850,9 @@ function buildRmItemHTML(r, i){
     <div class="rm-info">
       <div class="rm-name">${r.title}</div>
       <div class="rm-meta">${r.eps} ep${filmsTag}${_notes ? ' · ' : ''}${notesTooltip}</div>
-      ${r.status==='watching'?`<div class="progress-row"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="ep-stepper"><button class="step-btn" onclick="stepEp('${r.id}',-1)">‹</button><input class="ep-input" type="number" min="0" max="${r.eps}" value="${r.currentEp||0}" onchange="updateEp('${r.id}',this.value)"><button class="step-btn" onclick="stepEp('${r.id}',1)">›</button></div><span class="progress-num">/ ${r.eps}</span></div>`:''}
     </div>
     ${r.status==='watching'?`<div class="watching-tag">watching</div>`:''}
+    ${r.status==='watching'?`<div class="ep-stepper"><button class="step-btn" onclick="stepEp('${r.id}',-1)">‹</button><input class="ep-input" type="number" min="0" max="${r.eps}" value="${r.currentEp||0}" onchange="updateEp('${r.id}',this.value)"><span class="ep-total">/${r.eps}</span><button class="step-btn" onclick="stepEp('${r.id}',1)">›</button></div>`:''}
     <span class="badge ${r.type.toLowerCase()}">${r.type}</span>
     <div class="reorder-btns">
       <button class="reorder-btn" onclick="reorderEntry(db.roadmap,'${r.id}',-1,renderRoadmap)" title="Su">▲</button>
@@ -2704,10 +2864,12 @@ function buildRmItemHTML(r, i){
       <button class="item-btn" onclick="backToCalatogo_fromRoadmap('${r.id}')" title="Torna catalogo">↩</button>
       <button class="item-btn danger" onclick="dropEntry('${r.id}')">✕</button>
     </div>
+    ${r.status==='watching'?`<div class="progress-bottom"><div class="progress-bottom-fill" style="width:${pct}%"></div></div>`:''}
   </div>`;
 }
 
 function handleRmItemClick(e, id){
+  if(roadmapReorderMode) return;
   // Don't trigger if clicking on buttons, inputs, drag handle, or badges
   const tag = e.target.tagName;
   if(tag==='BUTTON'||tag==='INPUT'||e.target.classList.contains('drag-handle')||
@@ -2724,7 +2886,7 @@ function updateEp(id,val){
   // Patch solo barra progresso e input
   const node=document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
   if(node){
-    const fill=node.querySelector('.progress-fill');
+    const fill=node.querySelector('.progress-bottom-fill');
     const inp=node.querySelector('.ep-input');
     const pct=Math.round(item.currentEp/item.eps*100);
     if(fill) fill.style.width=pct+'%';
@@ -2734,7 +2896,11 @@ function updateEp(id,val){
 function setWatching(id){
   const item=db.roadmap.find(r=>r.id===id);
   if(!item) return;
-  item.status=item.status==='watching'?'normal':'watching';
+  const turningOn = item.status!=='watching';
+  item.status=turningOn?'watching':'normal';
+  if(turningOn && (!item.currentEp || item.currentEp<=0)){
+    item.currentEp = 1;
+  }
   save();
   // Ricostruisce solo questo nodo (cambia struttura con progress bar)
   const node=document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
@@ -2801,7 +2967,71 @@ function reorderEntry(arr,id,dir,renderFn){
   const newIdx=idx+dir;
   if(newIdx<0||newIdx>=arr.length) return;
   [arr[idx],arr[newIdx]]=[arr[newIdx],arr[idx]];
+  if(arr===db.roadmap && roadmapReorderMode){
+    // In modalità riordino: sposta solo il nodo DOM e rinumera, niente save/re-render
+    const container=document.getElementById('roadmap');
+    if(container){
+      const items=[...container.querySelectorAll('.rm-item')];
+      const elA=items[idx], elB=items[newIdx];
+      if(elA && elB){
+        if(dir<0) container.insertBefore(elA, elB);
+        else container.insertBefore(elB, elA);
+      }
+      renumberRmItems(container);
+    }
+    return;
+  }
   save(); renderFn();
+}
+function renumberRmItems(container){
+  container.querySelectorAll('.rm-item').forEach((el,i)=>{
+    const numEl=el.querySelector('.rm-num');
+    if(numEl) numEl.textContent=String(i+1).padStart(2,'0');
+  });
+}
+
+// ---- ROADMAP REORDER MODE ----
+let roadmapReorderMode = false;
+let _roadmapReorderSnapshot = null;
+function toggleRoadmapReorderMode(){
+  if(roadmapReorderMode) return;
+  roadmapReorderMode = true;
+  _roadmapReorderSnapshot = db.roadmap.map(r=>r.id);
+  const el=document.getElementById('roadmap');
+  if(el) el.classList.add('reorder-mode');
+  renderRoadmapReorderBar();
+  renderRoadmap();
+}
+function confirmRoadmapReorder(){
+  roadmapReorderMode = false;
+  _roadmapReorderSnapshot = null;
+  const el=document.getElementById('roadmap');
+  if(el) el.classList.remove('reorder-mode');
+  save();
+  renderRoadmapReorderBar();
+  renderRoadmap();
+  toast('Ordine aggiornato ✓','success');
+}
+function cancelRoadmapReorder(){
+  if(_roadmapReorderSnapshot){
+    const map={}; db.roadmap.forEach(r=>{ map[r.id]=r; });
+    const restored=_roadmapReorderSnapshot.map(id=>map[id]).filter(Boolean);
+    if(restored.length===db.roadmap.length) db.roadmap.splice(0,db.roadmap.length,...restored);
+  }
+  roadmapReorderMode = false;
+  _roadmapReorderSnapshot = null;
+  const el=document.getElementById('roadmap');
+  if(el) el.classList.remove('reorder-mode');
+  renderRoadmapReorderBar();
+  renderRoadmap();
+}
+function renderRoadmapReorderBar(){
+  const bar=document.getElementById('roadmapReorderBar');
+  if(!bar) return;
+  bar.innerHTML = roadmapReorderMode
+    ? `<button class="btn btn-sm" style="background:var(--green);border-color:var(--green);color:#04140c" onclick="confirmRoadmapReorder()">✓ Conferma ordine</button>
+       <button class="btn btn-ghost btn-sm" onclick="cancelRoadmapReorder()">✕ Annulla</button>`
+    : `<button class="btn btn-ghost btn-sm" onclick="toggleRoadmapReorderMode()">⇅ Riordina</button>`;
 }
 function stepEp(id,delta){
   const item=db.roadmap.find(r=>r.id===id);
@@ -2810,7 +3040,7 @@ function stepEp(id,delta){
   save();
   const node=document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
   if(node){
-    const fill=node.querySelector('.progress-fill');
+    const fill=node.querySelector('.progress-bottom-fill');
     const inp=node.querySelector('.ep-input');
     const pct=Math.round(item.currentEp/item.eps*100);
     if(fill) fill.style.width=pct+'%';
@@ -2931,7 +3161,8 @@ function initDragDrop(container,dataArray,renderFn){
               toast('⠿ Ordine personalizzato attivato','info');
             }
           }
-          save();
+          const isRoadmapReorderMode = container.id==='roadmap' && roadmapReorderMode;
+          if(!isRoadmapReorderMode) save();
           orderChanged = true;
         }
       }
@@ -2941,7 +3172,14 @@ function initDragDrop(container,dataArray,renderFn){
     if(dragging){ dragging.style.opacity=''; dragging=null; }
     active=false;
     // Ri-renderizza solo se l'ordine è cambiato, per evitare scroll reset inutili
-    if(orderChanged) renderFn();
+    if(orderChanged){
+      if(container.id==='roadmap' && roadmapReorderMode){
+        // In modalità riordino: aggiorna solo i numeri, niente re-render completo
+        renumberRmItems(container);
+      } else {
+        renderFn();
+      }
+    }
   }
 
   container.querySelectorAll('.drag-handle').forEach(handle=>{
@@ -3398,19 +3636,21 @@ function applyFilmTabVisibility(){
   [catalogHdr, catalogBox].forEach(el=>{ if(el) el.style.display = showCatalog ? '' : 'none'; });
   [completedHdr, completedSR, completedBox].forEach(el=>{ if(el) el.style.display = showCompleted ? '' : 'none'; });
 
-  // Within catalog: filter franchise vs standalone blocks
+  // Within catalog: filter franchise groups (Collezione Film / Collezione Serie) vs standalone block
+  const groupFilm = document.getElementById('film-group-collezionefilm');
+  const groupSerie = document.getElementById('film-group-collezioneserie');
+  const standaloneBlock = document.querySelector('#film-catalog-container .film-standalone-block');
   if(showCatalog && _filmActiveTab !== null){
-    const franchiseBlocks = document.querySelectorAll('#film-catalog-container .film-franchise-block');
-    const standaloneBlock = document.querySelector('#film-catalog-container .film-standalone-block');
     const showFranchise = _filmActiveTab === 'saghe';
     const showStandalone = _filmActiveTab === 'standalone';
-    franchiseBlocks.forEach(b=>{ b.style.display = showFranchise ? '' : 'none'; });
+    if(groupFilm) groupFilm.style.display = showFranchise ? '' : 'none';
+    if(groupSerie) groupSerie.style.display = showFranchise ? '' : 'none';
     if(standaloneBlock) standaloneBlock.style.display = showStandalone ? '' : 'none';
   } else if(showCatalog){
     // All visible
-    document.querySelectorAll('#film-catalog-container .film-franchise-block').forEach(b=>{ b.style.display=''; });
-    const sb = document.querySelector('#film-catalog-container .film-standalone-block');
-    if(sb) sb.style.display='';
+    if(groupFilm) groupFilm.style.display='';
+    if(groupSerie) groupSerie.style.display='';
+    if(standaloneBlock) standaloneBlock.style.display='';
   }
 }
 
@@ -3461,9 +3701,21 @@ function renderFilms(){
   const sagaIds = Object.keys(allSeriesMap).filter(id=>byFranchise[id]);
   Object.keys(byFranchise).forEach(id=>{ if(!sagaIds.includes(id)) sagaIds.push(id); });
 
-  sagaIds.forEach(fsId=>{
+  // Split saga ids in due gruppi: sagas di film puri (Collezione Film) e sagas legate ad anime
+  // (Collezione Serie). Il completamento (o il drop) della serie anime NON sposta i film: il film
+  // appartiene comunque a quella serie, quindi resta sempre in Collezione Serie.
+  const filmSagaIds = sagaIds.filter(id => (allSeriesMap[id]||{})._source !== 'anime');
+  const animeSagaIds = sagaIds.filter(id => (allSeriesMap[id]||{})._source === 'anime');
+  // Le saghe la cui serie è attualmente "in programma" (roadmap) o è stata completata vanno in cima
+  // alla Collezione Serie (prima le "in programma", poi le completate, poi le altre)
+  animeSagaIds.sort((a,b)=>{
+    const rank = id => db.roadmap.some(r=>r.id===id) ? 0 : (db.completed.some(r=>r.id===id) ? 1 : 2);
+    return rank(a) - rank(b);
+  });
+
+  function buildFranchiseBlockHTML(fsId){
     const fsFilms = byFranchise[fsId];
-    if(!fsFilms) return;
+    if(!fsFilms) return '';
     const saga = allSeriesMap[fsId];
     const fsName = saga ? saga.title : (findAnySeriesTitleById(fsId) || 'Saga rimossa');
     const allSagaFilms = [...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===fsId);
@@ -3480,12 +3732,18 @@ function renderFilms(){
       const rmPos = db.roadmap.findIndex(r=>r.id===rmEntry.id)+1;
       roadmapTag = `<span class="film-franchise-roadmap-tag">▶ N°${rmPos}</span>`;
     }
+    // "Serie ✓" tag: la serie anime collegata a questa saga è stata completata
+    let completedSeriesTag = '';
+    if(!rmEntry && db.completed.some(r => r.id === fsId)){
+      completedSeriesTag = `<span class="film-franchise-completed-tag">Serie ✓</span>`;
+    }
     // Film list tooltip removed from catalog header
-    html += `<div class="film-franchise-block collapsed" id="franchise-block-${fsId}">
+    return `<div class="film-franchise-block collapsed" id="franchise-block-${fsId}">
       <div class="film-franchise-header" onclick="toggleFranchiseCollapse('${fsId}')">
         <span class="film-franchise-name">${fsName}</span>
         ${seenTag}
         ${roadmapTag}
+        ${completedSeriesTag}
         <span class="film-franchise-count">${fsFilms.length} Film</span>
         <span class="film-franchise-collapse-icon">▾</span>
       </div>
@@ -3493,7 +3751,23 @@ function renderFilms(){
         ${fsFilms.map((f,i)=>buildFilmItemHTML(f,i)).join('')}
       </div>
     </div>`;
-  });
+  }
+
+  // Gruppo: Collezione Film (saghe di film puri, non legate ad anime)
+  if(filmSagaIds.length){
+    html += `<div class="film-group" id="film-group-collezionefilm">
+      <div class="section-label">Collezione Film</div>
+      ${filmSagaIds.map(buildFranchiseBlockHTML).join('')}
+    </div>`;
+  }
+
+  // Gruppo: Collezione Serie (saghe di film legate ad un anime)
+  if(animeSagaIds.length){
+    html += `<div class="film-group" id="film-group-collezioneserie">
+      <div class="section-label">Collezione Serie</div>
+      ${animeSagaIds.map(buildFranchiseBlockHTML).join('')}
+    </div>`;
+  }
 
   // Standalone block
   if(standalone.length){
