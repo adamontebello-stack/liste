@@ -750,6 +750,11 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: 0 0 0 1px rgba(232,25,90,0.1);
 }
 .rm-item.watching::before { background: var(--accent); }
+.rm-item.paused {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--border2);
+}
+.rm-item.paused::before { background: var(--muted2); }
 
 .rm-num, .c-num {
   font-family: 'JetBrains Mono', monospace;
@@ -897,6 +902,21 @@ input[type="number"] { -moz-appearance: textfield; }
   0%,100% { box-shadow: 0 0 0px var(--accentGlow); }
   50%      { box-shadow: 0 0 7px var(--accentGlow); }
 }
+
+/* Paused tag */
+.paused-tag {
+  font-size: 0.55rem; font-weight: 700;
+  color: var(--muted2);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border2);
+  padding: 3px 8px; border-radius: 28px;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Quick type-toggle badge (SUB/DUB swap) */
+.type-toggle-badge { cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.type-toggle-icon { font-size: 0.6rem; opacity: 0.75; }
 
 /* Check mark */
 .check-mark {
@@ -1701,7 +1721,7 @@ input[type="number"] { -moz-appearance: textfield; }
       <!-- Catalogo -->
       <button class="add-btn topbar-action" data-section="catalogo" onclick="openAddSeriesPopup()">＋ Aggiungi serie</button>
       <!-- Film -->
-      <button class="btn btn-ghost btn-sm topbar-action" data-section="film-section" style="display:none" onclick="openFilmSeriesManager()">🎬 Saghe</button>
+      <button class="btn btn-ghost btn-sm topbar-action" data-section="film-section" style="display:none" onclick="openFilmSeriesManager()">Saghe</button>
       <button class="add-btn topbar-action" data-section="film-section" style="display:none" onclick="openAddFilmPopup()">＋ Aggiungi</button>
       <!-- Roadmap -->
       <button class="btn btn-ghost btn-sm topbar-action" data-section="programma" style="display:none" onclick="addRandom()">⚄ Random</button>
@@ -1914,16 +1934,23 @@ input[type="number"] { -moz-appearance: textfield; }
         <span class="edit-modal-label">Episodi</span>
         <input class="edit-modal-input" id="em-eps" type="number" min="1" placeholder="24">
       </div>
-      <div class="edit-modal-field">
+      <div class="edit-modal-field" id="em-films-wrap">
         <span class="edit-modal-label">Film</span>
         <input class="edit-modal-input" id="em-films" type="number" min="0" placeholder="0">
       </div>
+      <div class="edit-modal-field">
+        <span class="edit-modal-label">Tipo</span>
+        <select class="edit-modal-input" id="em-type">
+          <option value="DUB">DUB</option>
+          <option value="SUB">SUB</option>
+        </select>
+      </div>
     </div>
-    <div class="edit-modal-field">
+    <div class="edit-modal-field" id="em-notes-wrap">
       <span class="edit-modal-label">Note (watchorder, OVA…)</span>
       <textarea class="edit-modal-textarea" id="em-notes" placeholder="es. guarda S2 prima degli OVA"></textarea>
     </div>
-    <div class="edit-modal-field">
+    <div class="edit-modal-field" id="em-ongoing-wrap">
       <div class="toggle-row">
         <span class="toggle-label-text">📡 In corso (ongoing)</span>
         <div class="toggle-switch" id="em-ongoing"></div>
@@ -2019,7 +2046,7 @@ input[type="number"] { -moz-appearance: textfield; }
 <div class="popup-overlay" id="filmSeriesManagerPopup">
   <div class="popup-box" onclick="event.stopPropagation()">
     <div class="popup-header">
-      <span class="popup-title">🎬 Gestisci Saghe</span>
+      <span class="popup-title">Gestisci Saghe</span>
       <button class="popup-close" onclick="closeFilmSeriesManager()">✕</button>
     </div>
     <div class="popup-field">
@@ -2043,7 +2070,7 @@ input[type="number"] { -moz-appearance: textfield; }
 <div class="popup-overlay" id="addFilmPopup">
   <div class="popup-box" onclick="event.stopPropagation()">
     <div class="popup-header">
-      <span class="popup-title">🎬 Nuovo film</span>
+      <span class="popup-title">Nuovo film</span>
       <button class="popup-close" onclick="closeAddFilmPopup()">✕</button>
     </div>
     <div class="popup-field">
@@ -2397,13 +2424,23 @@ function updateCatalogStats(){
 
 // Global edit modal
 let _editModalId = null;
+function findAnySeriesRecord(id){
+  const lists=[db.series,db.roadmap,db.dropped,db.completed];
+  for(const arr of lists){ const r=(arr||[]).find(x=>x.id===id); if(r) return r; }
+  return null;
+}
 function openEditModal(id){
-  const s=db.series.find(x=>x.id===id); if(!s) return;
+  const s=findAnySeriesRecord(id); if(!s) return;
+  const isFull=db.series.some(x=>x.id===id);
   _editModalId=id;
   document.getElementById('em-title').value=s.title;
   document.getElementById('em-eps').value=s.eps;
   document.getElementById('em-films').value=s.films||0;
   document.getElementById('em-notes').value=s.notes||'';
+  document.getElementById('em-type').value=s.type||'DUB';
+  document.getElementById('em-films-wrap').style.display=isFull?'':'none';
+  document.getElementById('em-notes-wrap').style.display=isFull?'':'none';
+  document.getElementById('em-ongoing-wrap').style.display=isFull?'':'none';
   const ongoingEl=document.getElementById('em-ongoing');
   ongoingEl.classList.toggle('on', !!s.ongoing);
   ongoingEl.onclick=()=>ongoingEl.classList.toggle('on');
@@ -2416,33 +2453,25 @@ function closeEditModal(){
 }
 function saveEditModal(){
   if(!_editModalId) return;
-  const s=db.series.find(x=>x.id===_editModalId); if(!s) return;
+  const s=findAnySeriesRecord(_editModalId); if(!s) return;
   const newTitle=document.getElementById('em-title').value.trim();
   const newEps=parseInt(document.getElementById('em-eps').value);
   if(!newTitle||!newEps||newEps<1){ toast('Dati non validi','error'); return; }
-  s.title=newTitle; s.eps=newEps;
-  s.films=parseInt(document.getElementById('em-films').value)||0;
-  s.notes=document.getElementById('em-notes').value.trim();
-  s.ongoing=document.getElementById('em-ongoing').classList.contains('on');
-  [db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===_editModalId); if(r){ r.title=newTitle; r.eps=newEps; } });
-  save();
-  const itemEl=document.getElementById('item-'+_editModalId);
-  if(itemEl){
-    const tags=[];
-    if(s.ongoing) tags.push(`<span class="item-tag ongoing">IN CORSO</span>`);
-    if(s.films>0) tags.push(`<span class="item-tag films">${s.films} FILM</span>`);
-    const body=itemEl.querySelector('.item-body');
-    if(body){
-      body.querySelector('.item-title').textContent=s.title;
-      let tagsEl=body.querySelector('.item-tags');
-      if(tags.length){ if(!tagsEl){ tagsEl=document.createElement('div'); tagsEl.className='item-tags'; body.appendChild(tagsEl); } tagsEl.innerHTML=tags.join(''); }
-      else if(tagsEl) tagsEl.remove();
-      let notesEl=body.querySelector('.item-notes-row');
-      if(s.notes){ if(!notesEl){ notesEl=document.createElement('div'); notesEl.className='item-notes-row'; body.appendChild(notesEl); } notesEl.textContent='📝 '+s.notes; }
-      else if(notesEl) notesEl.remove();
+  const newType=document.getElementById('em-type').value;
+  const isFull=db.series.some(x=>x.id===_editModalId);
+  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{
+    const r=(arr||[]).find(x=>x.id===_editModalId);
+    if(r){
+      r.title=newTitle; r.eps=newEps; r.type=newType;
+      if(isFull && arr===db.series){
+        r.films=parseInt(document.getElementById('em-films').value)||0;
+        r.notes=document.getElementById('em-notes').value.trim();
+        r.ongoing=document.getElementById('em-ongoing').classList.contains('on');
+      }
     }
-    itemEl.querySelector('.item-eps').textContent=s.eps;
-  }
+  });
+  save();
+  renderAll();
   toast('Serie aggiornata ✓','success');
   closeEditModal();
 }
@@ -2467,6 +2496,15 @@ function addRandom(forceType){
   save(); renderAll();
   const label=picked.favorite?`★ ${picked.title}`:`${picked.title}`;
   toast(`Aggiunto: ${label}`,'success');
+}
+function setPaused(id){
+  const item=db.roadmap.find(r=>r.id===id);
+  if(!item) return;
+  const turningOn = item.status!=='paused';
+  item.status = turningOn ? 'paused' : 'normal';
+  save();
+  renderRoadmap();
+  toast(item.status==='paused'?`⏸ In pausa: ${item.title}`:`▶ Ripreso: ${item.title}`);
 }
 function setWatching(id){
   const item=db.roadmap.find(r=>r.id===id);
@@ -2593,23 +2631,35 @@ function closeActionSheet(){
 }
 function openRoadmapMenu(id){
   const r = db.roadmap.find(x=>x.id===id); if(!r) return;
-  openActionSheet(r.title, `${r.eps} ep · ${r.type}`, [
+  const buttons = [
     { icon: r.status==='watching'?'⏸':'▶', iconBg:'amber-bg', cls:'amber',
       label: r.status==='watching'?'Interrompi visione':'Segna come In visione',
       action: () => setWatching(id) },
+  ];
+  if(r.status!=='paused'){
+    buttons.push({ icon: '⏸', iconBg:'gray-bg', cls:'',
+      label: 'Metti in pausa',
+      action: () => setPaused(id) });
+  }
+  buttons.push(
     { icon: '✓', iconBg:'green-bg', cls:'green', label:'Completa',
       action: () => completeEntry(id) },
     { icon: '↩', iconBg:'blue-bg', cls:'blue', label:'Torna al catalogo',
       action: () => backToCalatogo_fromRoadmap(id) },
+	{ icon: '✎', iconBg:'blue-bg', cls:'blue', label:'Modifica',
+      action: () => openEditModal(id) },
     { icon: '✕', iconBg:'red-bg', cls:'red', label:'Droppa',
       action: () => dropEntry(id) },
-  ]);
+  );
+  openActionSheet(r.title, `${r.eps} ep · ${r.type}`, buttons);
 }
 function openDroppedMenu(id){
   const r = db.dropped.find(x=>x.id===id); if(!r) return;
   openActionSheet(r.title, `${r.eps} ep · ${r.type} · droppata`, [
     { icon: '↩', iconBg:'green-bg', cls:'green', label:'Ripristina in roadmap',
       action: () => restoreDropped(id) },
+    { icon: '✎', iconBg:'blue-bg', cls:'blue', label:'Modifica',
+      action: () => openEditModal(id) },
     { icon: '◌', iconBg:'blue-bg', cls:'blue', label:'Torna al catalogo',
       action: () => backToCatalogo_fromDropped(id) },
   ]);
@@ -2619,6 +2669,8 @@ function openCompletedMenu(id){
   openActionSheet(r.title, `${r.eps} ep · ${r.type} · completata il ${new Date(r.completedAt).toLocaleDateString('it-IT')}`, [
     { icon: '↩', iconBg:'amber-bg', cls:'amber', label:'Riporta in roadmap',
       action: () => backToRoadmap_fromCompleted(id) },
+    { icon: '✎', iconBg:'blue-bg', cls:'blue', label:'Modifica',
+      action: () => openEditModal(id) },
   ]);
 }
 function openCatalogMenu(id){
@@ -2641,7 +2693,9 @@ function renderRoadmap(){
   if(!db.roadmap.length){ el.innerHTML='<div class="empty"><div class="empty-icon">▷</div>Roadmap vuota</div>'; return; }
   el.innerHTML=db.roadmap.map((r,i)=>{
     const isW=r.status==='watching';
+    const isP=r.status==='paused';
     const watchTag=isW?'<div class="watching-tag" style="flex-shrink:0">WATCHING</div>':'';
+    const pausedTag=isP?'<div class="paused-tag" style="flex-shrink:0">IN PAUSA</div>':'';
     const pct=Math.round((r.currentEp||0)/r.eps*100);
     const progressRow=isW
       ?'<div class="progress-row">'
@@ -2661,13 +2715,13 @@ function renderRoadmap(){
     const infoIcons=(hasNotes?'<span class="rm-info-icon notes">NOTE</span>':'')
                    +(hasFilms?'<span class="rm-info-icon films">'+filmCount+' FILM</span>':'');
     const canTap=hasNotes||hasFilms;
-    return '<div class="rm-item '+(isW?'watching':'')+(canTap?' has-detail':'')+'" data-id="'+r.id+'" style="animation:itemIn .22s '+(i*0.04)+'s both"'+(canTap?' onclick="event.stopPropagation();openRoadmapDetail(\''+r.id+'\')"':'')+' >'
+    return '<div class="rm-item '+(isW?'watching':'')+(isP?' paused':'')+(canTap?' has-detail':'')+'" data-id="'+r.id+'" style="animation:itemIn .22s '+(i*0.04)+'s both"'+(canTap?' onclick="event.stopPropagation();openRoadmapDetail(\''+r.id+'\')"':'')+' >'
       +'<div class="drag-handle">⠿</div>'
       +'<div class="rm-num">'+String(i+1).padStart(2,'0')+'</div>'
       +'<div class="rm-info">'
         +'<div style="display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;">'
           +'<div class="rm-name" style="flex:1;min-width:0">'+escHtml(r.title)+'</div>'
-          +watchTag
+          +watchTag+pausedTag
         +'</div>'
         +'<div class="rm-meta" style="margin-top:4px;display:flex;align-items:center;gap:6px;">'+r.eps+' ep · <span class="badge '+r.type.toLowerCase()+'" style="padding:1px 6px;font-size:0.56rem">'+r.type+'</span>'+infoIcons+'</div>'
         +progressRow
@@ -2952,12 +3006,12 @@ function populateFilmSagaSelect(selectId, currentSeriesId='', excludeFilmId=null
 
   let html='<option value="">— Stand-alone —</option>';
   if(animeAvail.length){
-    html+=`<optgroup label="📺 Saga Anime">`;
+    html+=`<optgroup label="Saga Anime">`;
     animeAvail.forEach(s=>{ html+=`<option value="${s.id}"${s.id===currentSeriesId?' selected':''}>${escHtml(s.title)}</option>`; });
     html+='</optgroup>';
   }
   if(filmAvail.length){
-    html+=`<optgroup label="🎬 Saga Film">`;
+    html+=`<optgroup label="Saga Film">`;
     filmAvail.forEach(s=>{ html+=`<option value="${s.id}"${s.id===currentSeriesId?' selected':''}>${escHtml(s.title)}</option>`; });
     html+='</optgroup>';
   }
@@ -3255,17 +3309,17 @@ function renderFilms(){
     <div class="stat-pill"><span class="dot green"></span> Completati: <strong>${db.filmsCompleted.length}</strong></div>`;
 
   const el=document.getElementById('film-list');
-  if(!data.length){ el.innerHTML='<div class="empty"><div class="empty-icon">🎬</div>Nessun film in catalogo</div>'; }
+  if(!data.length){ el.innerHTML='<div class="empty"><div class="empty-icon"></div>Nessun film in catalogo</div>'; }
   else {
     const buildFilmItem=(f,i,showBadge=false,insideSaga=false)=>{
       const rec=f.seriesId?getSeriesRecord(f.seriesId):null;
       const typeColor=f.type==='DUB'?'var(--dub-color)':'var(--sub-color)';
       const tagHtml=(rec&&!insideSaga)
-        ?`<span class="film-tag da-serie">${rec._source==='anime'?'📺 anime':'🎬 saga'}</span>`
+        ?`<span class="film-tag da-serie">${rec._source==='anime'?'anime':'saga'}</span>`
         :(!rec?`<span class="film-tag standalone">stand-alone</span>`:'');
       const orderBadge=(showBadge&&f.seriesOrder!=null)?`<span class="film-order-badge">${f.seriesOrder}°</span>`:'';
-      const serieNameHtml=(rec&&!insideSaga)?`<div class="film-serie-name">${rec._source==='anime'?'📺':'🎬'} ${escHtml(rec.title)}</div>`:'';
-      const notesHtml=f.notes?`<div class="item-notes-row">📝 ${escHtml(f.notes)}</div>`:'';
+      const serieNameHtml=(rec&&!insideSaga)?`<div class="film-serie-name">${escHtml(rec.title)}</div>`:'';
+      const notesHtml=f.notes?`<div class="item-notes-row"> ${escHtml(f.notes)}</div>`:'';
       return `<div class="rm-item" data-id="${f.id}" style="animation:itemIn .2s ${i*0.025}s both">
         <div class="rm-num">${String(i+1).padStart(2,'0')}</div>
         <div class="rm-info">
@@ -3294,7 +3348,7 @@ function renderFilms(){
       const typeLabel=isAnime?'anime':'film';
       html+=`<div class="film-saga-block">
         <div class="film-saga-header">
-          ${isAnime?'📺':'🎬'} ${escHtml(sagaTitle)}
+          ${escHtml(sagaTitle)}
           <span class="saga-type-badge ${typeLabel}">${typeLabel}</span>
         </div>`;
       films.forEach((f,i)=>{ html+=buildFilmItem(f,idx++,showOrderBadge,true); });

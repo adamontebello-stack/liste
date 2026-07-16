@@ -845,6 +845,13 @@ main {
 }
 .rm-item.watching::before { background: var(--accent); }
 
+.rm-item.paused {
+  background: rgba(255,255,255,0.035);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 18px rgba(255,255,255,0.04);
+}
+.rm-item.paused::before { background: var(--text); }
+
 .rm-num, .c-num {
   font-family: 'DM Mono', monospace;
   font-weight: 500; font-size: 0.72rem;
@@ -907,6 +914,33 @@ main {
   0%,100% { box-shadow: 0 0 0px var(--accentGlow); }
   50%      { box-shadow: 0 0 8px var(--accentGlow); }
 }
+.paused-tag {
+  font-size: 0.57rem; font-weight: 700;
+  color: var(--text);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 3px 9px; border-radius: 30px;
+  letter-spacing: 0.07em; text-transform: uppercase;
+}
+.type-toggle-badge { cursor: pointer; transition: filter 0.15s, transform 0.15s; user-select: none; }
+.type-toggle-badge:hover { filter: brightness(1.25); transform: translateY(-1px); }
+.type-toggle-icon { opacity: 0.55; margin-left: 4px; font-size: 0.85em; }
+.rm-detail-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+.rm-detail-action {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 11px 14px; border-radius: 12px;
+  font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.34,1.4,0.64,1);
+  text-align: left; width: 100%;
+  font-family: inherit;
+}
+.rm-detail-action .rda-icon { font-size: 0.95em; width: 1.2em; text-align: center; flex-shrink: 0; }
+.rm-detail-action:hover { border-color: var(--border2); background: var(--card-hover); transform: translateX(2px); }
+.rm-detail-action.active { border-color: var(--accent); background: var(--accentGlow2); color: var(--accent2); box-shadow: 0 0 0 1px var(--accentGlow); }
+.rm-detail-action.paused-active { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); color: var(--text); }
+.rm-detail-action.danger { color: var(--red); }
+.rm-detail-action.danger:hover { border-color: var(--red); background: rgba(255,59,74,0.08); }
 .ongoing-tag {
   font-size: 0.57rem; font-weight: 700;
   color: var(--green);
@@ -1960,17 +1994,7 @@ main {
     </div>
     <div id="film-catalog-container"></div>
 
-    <!-- FILM COMPLETATI -->
-    <div id="film-completed-header"></div>
-    <div class="search-row search-row-compact" id="film-completed-search-row" style="margin-bottom:0.75rem">
-      <input class="search-input" type="text" placeholder="Cerca nei film completati…" id="filmCompletedSearch" oninput="renderFilmsCompleted()">
-      <select class="sort-select" id="filmCompletedSort" onchange="renderFilmsCompleted()">
-        <option value="recent">Recenti</option>
-        <option value="title">A–Z</option>
-      </select>
-    </div>
-    <div id="film-completed-container"></div>
-
+   
     <!-- (vecchio blocco, non più usato) FILM COMPLETATI -->
   </div>
 </div>
@@ -2042,6 +2066,8 @@ main {
     </div>
     <div class="stats-bar" style="margin-bottom:1rem;" id="completateFilmStats">
       <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completate-film-count">0</strong></div>
+      <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 5px var(--dub-color)"></span> DUB: <strong id="completate-film-dub-count">0</strong></div>
+      <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 5px var(--sub-color)"></span> SUB: <strong id="completate-film-sub-count">0</strong></div>
     </div>
     <div class="completed-grid" id="completate-film-list"></div>
   </div>
@@ -2204,6 +2230,13 @@ main {
         <span class="edit-label">Film</span>
         <input class="edit-field" id="editModalFilms" type="number" min="0" placeholder="0">
       </div>
+      <div style="flex:1">
+        <span class="edit-label">Tipo</span>
+        <select class="edit-field" id="editModalType">
+          <option value="DUB">DUB</option>
+          <option value="SUB">SUB</option>
+        </select>
+      </div>
     </div>
     <span class="edit-label">Note (watchorder, OVA, film…)</span>
     <textarea class="edit-textarea" id="editModalNotes" placeholder="es. Film → S1 → OVA → S2" rows="2"></textarea>
@@ -2239,6 +2272,33 @@ main {
 <script>
 const PATTERN = ["DUB","DUB","SUB"];
 const FIREBASE_URL = 'https://serietracker-58894-default-rtdb.europe-west1.firebasedatabase.app/data.json';
+
+// ---- PERF: cascata animazione con tetto massimo (le voci più in basso non aspettano più all'infinito) ----
+function staggerDelay(i, step, cap){
+  // Oltre un certo numero di elementi l'animazione a cascata non aggiunge valore percepito
+  // e rallenta solo la resa (soprattutto rientrando in una sezione dopo aver scrollato in basso).
+  if(i > 18) return 0;
+  return Math.min(i*(step||0.03), cap===undefined?0.22:cap);
+}
+
+// ---- PERF: cache di rendering — se i dati e i filtri non sono cambiati dall'ultima volta,
+// evita di ricostruire l'HTML (e quindi di rigiocare la cascata) quando si esce/rientra in una sezione ----
+const _lastSig = {};
+function _sig(key, extra){
+  // NB: _updatedAt cambia ad ogni save(), anche per interazioni in sezioni diverse da
+  // quella che stiamo per renderizzare. Escluderlo dalla firma evita di ricostruire
+  // (e rigiocare l'intera cascata di animazioni) quando i dati rilevanti per QUESTA
+  // sezione non sono in realtà cambiati.
+  const { _updatedAt, ...dbForSig } = db;
+  return key+'::'+(extra||'')+'::'+JSON.stringify(dbForSig);
+}
+function _skipIfUnchanged(key, extra){
+  const sig = _sig(key, extra);
+  if(_lastSig[key] === sig) return true;
+  _lastSig[key] = sig;
+  return false;
+}
+function _invalidateSig(key){ delete _lastSig[key]; }
 
 // ---- Seed data from exported JSON ----
 const SEED_DATA = {"series":[{"id":"b7fd69c0-526c-4d09-9bb5-273a3bc6a8fc","title":"Devilman crybaby","eps":10,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"f3ac2288-5018-4725-a467-a40fad92a82b","title":"Paranoia agent","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"85479f45-636a-4711-a5a6-7767311b7e6e","title":"Boogiepop phantom","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"6a295c86-9b6a-477d-8112-010f58794a19","title":"Drifters","eps":12,"type":"DUB","genre":"","inRoadmap":true,"addedAt":1778456222046},{"id":"938c27b4-4af5-4c64-a8fa-5049b417f4d4","title":"Deadman wonderland","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"7165eb91-5e1b-4da0-989a-d6fdf2ba8881","title":"Da campagnolo stagionato a gran maestro di spada","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"2efa2a7d-a784-4517-9126-fb3b631ceb1b","title":"Highschool of the dead","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"5142b232-8083-47fe-bd31-ae0e7073facf","title":"I'm in love with the villainess","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"7034f173-c771-4dbc-b0a5-00823b4819dd","title":"Kamikatsu","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"83c9700b-5db6-4424-8de3-0eb4b0c01ebf","title":"Madoka magika","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"5149aa07-041c-43b3-b219-8621a9326db5","title":"My unique skill makes me op even at lvl1","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"9e18c705-5827-4c34-846b-6b9a43aa9ba8","title":"Prison school","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"ae32e8a3-6fc9-409f-81ab-5ffa2b183ad1","title":"The legendary hero is dead","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"b1aeebb8-b53f-4462-b5cd-6dd5ecdaab7d","title":"Zenshu","eps":12,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"29ada50f-aac2-4e40-ae1e-cda166443056","title":"I got a cheat skill in another world","eps":13,"type":"DUB","genre":"","inRoadmap":true,"addedAt":1778456222046},{"id":"7610ae77-44f1-4e3e-b6b3-a22c3d476855","title":"Metallic rouge","eps":13,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"f8cc1604-9d4f-4b04-a053-4ae5c6d93126","title":"Super ladri","eps":13,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"960df4d6-8b75-4ddb-be19-8c21d73d8b5a","title":"Haruhi suzumiya","eps":14,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222046},{"id":"89968764-4a44-4f68-8504-012845356cb9","title":"B:the beginning","eps":18,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"3a5d362f-4a7e-4d93-8679-a06ced03296f","title":"Psycho-pass","eps":22,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"98526cde-9000-4f09-8958-5fddac107505","title":"Ranking of kings","eps":23,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"ea64d538-6ba1-4b57-9c05-e6de438700c3","title":"Blood of zeus","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"7b331c19-4437-4cf0-942c-abe4ad636618","title":"Blue box","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"005f6cdb-b2f8-4a04-b705-c332538923b7","title":"Call of the night","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"7a94aca4-b707-40b7-a64a-f8c34948aefc","title":"Dungeon food","eps":24,"type":"DUB","genre":"","inRoadmap":true,"addedAt":1778456222047},{"id":"e2045078-99ad-4e71-b30c-b9b7b963fb57","title":"Ergo proxy","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"ae4c4885-7f93-4a9b-8b9a-144ebd719ec2","title":"Gachiakuta","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"dc90bf2e-e801-4589-a228-04298a910ed4","title":"Goblin slayer","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"5282e458-e1aa-4622-9e82-42777f140ce0","title":"Hell's paradise","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"7ecd4b2c-cb9c-4fdf-9ac5-bb3c266340e1","title":"Kill la kill","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"7be4c1ae-d17a-4530-b635-f3244c815006","title":"Kyashan sins","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"645dfaab-2234-4da0-b490-2044e051180a","title":"Mashle","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"d1f2eb02-5752-4b20-a4f4-7976d4c76515","title":"Parasyte","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"1966c901-be91-4b7c-9feb-34599dc6da11","title":"Planetes","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"019a2986-4509-4ecf-8f76-29b3a705ba5b","title":"Sakamoto days","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"2fc4a6b4-5751-4978-aa29-6a28a764c300","title":"Summer time rendering","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"d4a1c4c2-a3a8-4388-a80b-59e5187b5898","title":"Swordgai","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"9cad3698-95b1-4a5b-ad57-1f7977038bc9","title":"Tougen anki","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"f80260d5-4500-49b3-88f7-d1c0a489e9f1","title":"Toradora","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"e73b0fee-b5a5-4f38-b45f-4458cfa1c6cb","title":"The promised neverland","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"2067c335-b826-4223-9785-fd7432701b90","title":"Trinity blood","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"af3ab466-4003-4986-b554-135fcd0727a1","title":"Welcome to the NHK","eps":24,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"c10bb894-1116-454a-985a-cec71edc2a6a","title":"My happy marriage","eps":25,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"f0049915-86bb-4797-ab69-411bee0d1326","title":"Wind breaker","eps":25,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"c9a89b53-ec21-4e93-a04a-d0cd2311a266","title":"Samurai champloo","eps":26,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"7473a0b0-48fd-42f8-9e47-241fb83f5056","title":"Tower of god","eps":39,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"5ae7d943-188d-487d-a638-dcaf3196ff3c","title":"Record of ragnarok","eps":42,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"eb339a4f-bbff-488a-b0aa-be9fefb639eb","title":"Mushoku Tensei","eps":48,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"1f11582d-ed8c-47e5-b7fe-50679fa33435","title":"Shangri-la frontier","eps":48,"type":"DUB","genre":"","inRoadmap":true,"addedAt":1778456222047},{"id":"d6a0aadc-3603-481e-8213-3c150190694c","title":"The ancient magus bride","eps":48,"type":"DUB","genre":"","inRoadmap":true,"addedAt":1778456222047},{"id":"8753f95f-3a3b-4b87-a79f-f63ba32d250a","title":"Soul eater","eps":51,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"e3324438-27d1-4e8d-889d-5815e83d0fe0","title":"Overlord","eps":52,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"e86170f0-822b-445b-804c-31656150396a","title":"The rising of the shield hero","eps":60,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"d78755e2-b3bd-49e9-acb7-6d54f0f21edb","title":"To your eternity","eps":62,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"419dee62-1101-4345-bf87-f9039418b361","title":"Demon slayer","eps":63,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4cf868e4-cad8-495a-8dd5-004f3b337f6a","title":"Fullmetal alchemist brotherhood","eps":64,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"c11bbe77-2a8b-4b5e-a040-94d918afd532","title":"Fire force","eps":72,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"6ef3d1c9-62e6-4d01-b18d-9afc874e993d","title":"Tensura (slime)","eps":72,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4dc722e8-f6c7-40a3-8ab9-14b28c749b87","title":"Kuroko's Basket","eps":75,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"ded2a51a-2866-4f20-89e1-4bebbf32a9e6","title":"The seven deadly sins","eps":96,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"912607e9-b43c-4ed4-a236-576193607857","title":"Fairy tail","eps":328,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"3f113b2c-279c-4e03-82a0-6b53f9821b4d","title":"Gintama","eps":367,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4192d027-4b62-479a-a0cb-880e0c21b037","title":"Bleach","eps":406,"type":"DUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"e9af4dc6-f8b0-43c5-be0f-8a32536bd0b0","title":"Alice in borderland","eps":3,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"fefb52f5-a16c-4e27-a672-49277da2d0a7","title":"Housing complex C","eps":4,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"741352ec-9375-443d-b400-a8b540d75004","title":"Guilty gear","eps":8,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"46c7cd9c-1b9e-4bb6-b059-31e8cf276d0a","title":"Blood lad","eps":10,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4e276c0b-91b2-4d47-8824-4985866aadfd","title":"My girlfriend is shobitch","eps":10,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"b2554cb7-28fd-4d4e-881f-f04d7ffd4c7f","title":"Inuyashiki","eps":11,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"2fabbe91-8d70-4304-9056-825d79b562dc","title":"Nukitashi","eps":11,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"b8b621b2-33c3-460c-853b-c8d71f5de1ff","title":"The millionaire detective balance:unlimited","eps":11,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"484dd56a-26b4-4e6f-a933-19feec82e5d5","title":"91 days","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"baf1e035-0618-493b-8f69-8476c7f0746d","title":"A galaxy next door","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"1298277b-0a24-4da6-b2ac-04d4de33fc41","title":"Am I actually the strongest","eps":12,"type":"SUB","genre":"","inRoadmap":true,"addedAt":1778456222047},{"id":"b397f40c-561b-4124-aaea-4035446d09da","title":"A sign of affection","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4d3e0556-ca15-4558-a15f-d1f3706b35dd","title":"Astra lost in space","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"28708561-c2e7-40cb-83ad-d59a9abcf00a","title":"A returner's magic should be special","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"153e5565-6f2e-448c-bf73-e3a5ebd9e568","title":"Alderamin on the sky","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"68364d04-29e0-437b-9f82-5a272b2a88ed","title":"Alya sometimes hides her feelings in russian","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4a4bfe9f-168d-4a83-94c4-9d2d72eb7929","title":"Ben-to","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"4b9aace9-d619-480f-bbbb-d0a946eb72d1","title":"Boarding school juliet","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"322cc64f-8b75-47aa-8abb-5511b171d3ee","title":"Clevates","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"0e824981-3720-4e1b-94a2-cfdf872550b1","title":"Cautious hero","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"3ff37445-e010-41d8-ac1f-eb69cdf6c454","title":"Chillin' in another world with lv2 super cheat powers","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"409de557-7f45-4e95-87ed-6812f169a658","title":"D-frag","eps":12,"type":"SUB","genre":"","inRoadmap":true,"addedAt":1778456222047},{"id":"3ac789b6-7488-4d16-b223-04f16d042ea2","title":"Dragonar academy","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"09f54abf-575f-4b7c-b030-c73a14ec1439","title":"Girls last tour","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"45af1143-2fdc-44ac-a994-bc17bf308d7b","title":"Girls frontline","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"30f79598-bd92-426f-a800-0f3eae214427","title":"I have a crush at work","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"db0a5836-2792-4cf7-9dee-81e24718af7f","title":"Kubo won't let me be invisible","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"fe0b9e94-1e31-489e-8702-0df61124cc75","title":"Killing bites","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"0ec44988-e6e0-42e5-894e-d94f047dd643","title":"Mikadono sisters","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222047},{"id":"44f8e7e1-02c9-4e20-85f3-414981f5119b","title":"Medaka kuroiwa is impervious to my charms","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"70225d0b-7ff9-4b6d-8c2e-143ce7b92c2e","title":"My love story with yamada-kun","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"488a6a92-5a44-4705-a98b-31018595143d","title":"Oresuki","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"910d84df-e3cb-4eef-876d-8fca60ab9f7f","title":"Our last crusade","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"e2b7a8f4-317d-407e-b449-faeeb8f39e6e","title":"To be hero x","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"10bf0662-f39e-4361-a372-e723ad0b0da8","title":"The hentai prince and stony cat","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"289e4a85-2a7f-47d9-a7f0-ddc858ca87ee","title":"Trinity seven","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"10fa9e19-8e72-4aca-b930-b8ebacdc2962","title":"Tomodachi game","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"39c4a85f-eafe-4915-82b9-be7814240ca8","title":"The chivalry of a failed knight","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"47e6995c-5ff8-44fa-8047-3494ff7c3cd2","title":"Undefeated bahamut chronicle","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"2fb4ee8d-06e7-42fe-97ca-5780416cb269","title":"Unnamed memory","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"673d6c8d-48b3-448c-b9ac-5027167d7fc1","title":"Wistoria","eps":12,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"09547ad9-fa6e-4197-b040-c016d92a7847","title":"Angel beats","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"d5976076-4505-44e7-b031-55242cf77e7a","title":"Charlotte","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"d6e15afa-a9c9-4f73-8013-29ae163dcde4","title":"Engage kiss","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"56881aba-4509-40a0-831f-3b26fca02bac","title":"Elfen lied","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"c2a3e88c-6427-4f30-99ed-1cb6ae3405ac","title":"Ghost stories","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"024475be-79d5-44ad-aeec-cbcb7ab6d56f","title":"Gleipnir","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"8cd2b112-aaf2-40e4-8bd3-0c4c866d2db8","title":"God eater","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"253c84cb-2c73-4e95-a2ff-df6a81288c08","title":"Lazarus","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"c19b937f-cddf-4965-8bfe-748e4e58d869","title":"Lycoris recoil","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"417cc78e-9191-4959-8255-1656ef55d0a1","title":"Tengoku-daimakyo","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"d32acdba-f7c1-4106-999a-009c6b2cb892","title":"Vivy","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"0d5ff5bb-b3af-4c18-96ca-bf50d3d2845b","title":"Zetman","eps":13,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"fb6b6b41-31e1-4b5c-b4b7-5ac8f5da30eb","title":"Gnosia","eps":21,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"0b15711e-c34d-451b-973c-3a6f2097ace9","title":"Guilty crown","eps":22,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"1d283cc1-639b-4ab7-a75c-b79788623cea","title":"2.5 dimensional seduction","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"47cf49ab-d215-4761-8f7b-e3e729d0d847","title":"Akame ga kill","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"92257f17-878d-4619-8688-4c2900bc6d90","title":"Aharen-san","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"cf0e3129-d485-451e-aa67-68f3550786ef","title":"Blood blockade","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"15bb7f29-5746-4314-a48b-7914c2645b16","title":"Bottom tier character Tomozaki","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"f6b13dbe-74d3-43b9-a16d-eefca011ce87","title":"Golden time","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"cd9e5cbe-8b1a-423d-8eae-a3d0be154ac3","title":"Gate","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"c002d0f3-f25b-438c-bd9e-d9347530fd7e","title":"Jormungand","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"8cf087b6-a836-4050-9cca-e5a733bb9862","title":"Masamune-kun's revenge","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"aadebf94-dc06-44e9-8a95-0bebf9766031","title":"Snow white with the red hair","eps":24,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"2b3299bd-9834-4eef-b427-56171950f9c3","title":"Cross ange","eps":25,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"63e1a4c0-6b11-4552-9810-27d2d77bbbee","title":"Darker than black","eps":25,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"38e31a78-4a11-4513-8d37-4731d837b4aa","title":"Orb","eps":25,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"cd0efca4-6403-4636-952c-5f80c39fe5bf","title":"Tales of wedding rings","eps":25,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"c6d5c271-9006-4087-b44b-0329a275ed58","title":"Bunny girl senpai","eps":26,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"024b1cbf-7843-484b-b593-6b28bc1aee83","title":"Magister negi magi","eps":26,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"a566a2ac-0f71-48fe-9275-30a5e30ee0e4","title":"How a realist rebuilt the kingdom","eps":26,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"ef51861b-502b-4cd9-a905-22e68b5499b2","title":"Rahxephon","eps":26,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"3fb4e563-23b1-44f6-bbd4-125b6a2d2e61","title":"Kaguya-sama love is war","eps":37,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"cde5c220-8792-4ac1-82e9-e29d0b654d53","title":"Oregairu","eps":38,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"30c26452-da59-41f8-8f38-9c9a28a7f00a","title":"Higurashi 2020","eps":39,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"882630f4-eac6-4fe2-b8c7-9d7798ae7b29","title":"Clannad","eps":47,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"34d87afe-88a6-4a54-8dc2-f0071c9abebc","title":"Highschool dxd","eps":48,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"2e35b68f-14ff-4551-bb72-813eaec09c3a","title":"Strike the blood","eps":48,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"497be65e-e170-4d89-9872-b5922fd4e4f5","title":"Saiki k","eps":48,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"e8b627c1-b2b5-4b41-9048-211777d07999","title":"Iron blooded orphans","eps":50,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"db96002c-6638-4717-8810-6e956f6701e1","title":"Twin star exorcist","eps":50,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"4e357f00-810c-48e8-bffd-665d94fc0818","title":"Higurashi 2006","eps":55,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"2d2aa8ad-a787-4264-81bf-acde9a54ee05","title":"Bungo stray dogs","eps":60,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"bc0a0e21-04a2-4796-9429-140638393579","title":"The daily life of the immortal king","eps":63,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"3af3a314-3efc-4ef3-8305-a186f6addfba","title":"A certain magical index","eps":74,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"b7dcec7d-451d-4a73-850b-91543550a711","title":"Food wars!","eps":86,"type":"SUB","genre":"","inRoadmap":false,"addedAt":1778456222048},{"id":"617399b6-3a39-4a1d-8934-a1f491df7f9d","title":"Classroom for heroes","eps":12,"type":"SUB","genre":"","inRoadmap":true,"addedAt":1778456222048},{"id":"cee72c8c-afe2-42db-bf02-6658cc6e926a","title":"Tenken","eps":12,"type":"DUB","genre":"","inRoadmap":true,"addedAt":1778622685742}],"roadmap":[{"id":"7a94aca4-b707-40b7-a64a-f8c34948aefc","title":"Dungeon food","eps":24,"type":"DUB","genre":"","status":"watching","currentEp":16},{"id":"cee72c8c-afe2-42db-bf02-6658cc6e926a","title":"Tenken","eps":12,"type":"DUB","status":"normal","currentEp":0},{"id":"617399b6-3a39-4a1d-8934-a1f491df7f9d","title":"Classroom for heroes","eps":12,"type":"SUB","genre":"","status":"normal","currentEp":0},{"id":"6a295c86-9b6a-477d-8112-010f58794a19","title":"Drifters","eps":12,"type":"DUB","genre":"","status":"normal","currentEp":0},{"id":"1298277b-0a24-4da6-b2ac-04d4de33fc41","title":"Am I actually the strongest","eps":12,"type":"SUB","genre":"","status":"normal","currentEp":0},{"id":"1f11582d-ed8c-47e5-b7fe-50679fa33435","title":"Shangri-la frontier","eps":48,"type":"DUB","genre":"","status":"normal","currentEp":0},{"id":"d6a0aadc-3603-481e-8213-3c150190694c","title":"The ancient magus bride","eps":48,"type":"DUB","genre":"","status":"normal","currentEp":0},{"id":"29ada50f-aac2-4e40-ae1e-cda166443056","title":"I got a cheat skill in another world","eps":13,"type":"DUB","genre":"","status":"normal","currentEp":0},{"id":"409de557-7f45-4e95-87ed-6812f169a658","title":"D-frag","eps":12,"type":"SUB","genre":"","status":"normal","currentEp":0}],"dropped":[],"completed":[{"id":"b99e9955-6f59-4baf-ae9c-eb2c62df4704","title":"Akudama drive","eps":12,"type":"DUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622198202},{"id":"6c10b3a9-42f0-4ea8-85ee-a9e8c0117220","title":"Seraph of the end","eps":24,"type":"SUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622202336},{"id":"06634170-8687-4aa9-8412-2e38e59cc333","title":"Gantz","eps":26,"type":"DUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622194753},{"id":"2404287c-25ec-4835-ad04-265860239fed","title":"worldend","eps":12,"type":"SUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622188986},{"id":"111df213-4f36-4afc-802b-e7f58519064d","title":"Link click","eps":30,"type":"DUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622183454},{"id":"84e7658d-cef0-44ba-a1ac-db08056fdb96","title":"Bocchi the rock","eps":12,"type":"DUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622174670},{"id":"338640a0-e225-46a5-a05e-dc23859c8356","title":"86","eps":24,"type":"SUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622169836},{"id":"a23f4dbf-09a8-41c7-8969-04ce118066f7","title":"Zom100","eps":12,"type":"DUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622161570},{"id":"a4e9e7b5-a3e1-4c74-8d59-ace0cfea9a9f","title":"Apothecary diaries","eps":48,"type":"DUB","genre":"","status":"normal","currentEp":0,"completedAt":1778622156203}],"patternIndex":0,"_updatedAt":1778701628395};
@@ -2504,7 +2564,7 @@ function _resetAddOngoing(){
 
 function buildItemHTML(s, i){
   return `
-    <div class="item" style="animation:itemIn .2s ${i*0.025}s both;cursor:pointer;" id="item-${s.id}" onclick="openSeriesDetail('${s.id}')">
+    <div class="item" style="animation:itemIn .2s ${staggerDelay(i,0.025,0.3)}s both;cursor:pointer;" id="item-${s.id}" onclick="openSeriesDetail('${s.id}')">
       <div class="item-num">${i+1}</div>
       <div class="item-info">
         <div class="item-title">${s.title}</div>
@@ -2544,7 +2604,7 @@ function openSeriesDetail(id){
   // Tags row
   const tagsEl = document.getElementById('sdTags');
   tagsEl.innerHTML =
-    `<span class="badge ${s.type.toLowerCase()}">${s.type}</span>` +
+    `<span class="badge ${s.type.toLowerCase()} type-toggle-badge" onclick="event.stopPropagation();toggleSeriesType('${s.id}')" title="Cambia SUB/DUB">${s.type}<span class="type-toggle-icon">⇄</span></span>` +
     (s.ongoing ? '<span class="ongoing-tag">▶ In corso</span>' : '') +
     (s.films  ? `<span class="film-tag">${s.films} film</span>` : '');
 
@@ -2612,6 +2672,49 @@ function closeSeriesDetail(){
 }
 function handleSdOverlayClick(e){
   if(e.target===document.getElementById('seriesDetailOverlay')) closeSeriesDetail();
+}
+
+// Cambia rapidamente SUB/DUB su una serie, ovunque essa si trovi (catalogo/roadmap/completate/droppate)
+function toggleSeriesType(id){
+  const found = findAnyEntryById(id);
+  if(!found) return;
+  const newType = found.rec.type==='DUB' ? 'SUB' : 'DUB';
+  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r) r.type=newType; });
+  save();
+  renderCatalog(); renderRoadmap(); renderCompleted(); renderDropped();
+  toast(`Tipo cambiato in ${newType}`,'success');
+  // Se il popup aperto è proprio questo elemento, aggiornalo per riflettere il nuovo tipo
+  if(found.list==='completed') openCompletedSeriesDetail(id);
+  else if(found.list==='roadmap') openRoadmapDetail(id);
+  else openSeriesDetail(id);
+}
+
+// ---- SERIE COMPLETATA — DETAIL POPUP (riusa #seriesDetailOverlay) ----
+function openCompletedSeriesDetail(id){
+  const s = db.completed.find(x=>x.id===id);
+  if(!s) return;
+  _detailSeriesId = id;
+
+  document.getElementById('sdTags').innerHTML =
+    `<span class="badge ${s.type.toLowerCase()} type-toggle-badge" onclick="event.stopPropagation();toggleSeriesType('${s.id}')" title="Cambia SUB/DUB">${s.type}<span class="type-toggle-icon">⇄</span></span>` +
+    `<span class="ongoing-tag" style="color:var(--green);background:rgba(46,232,165,0.12);border-color:rgba(46,232,165,0.28);">✓ Completato</span>`;
+  document.getElementById('sdTitle').textContent = s.title;
+
+  let html = '<div class="sd-stats">';
+  html += `<div class="sd-stat"><div class="sd-stat-label">Episodi</div><div class="sd-stat-value">${s.eps}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Tipo</div><div class="sd-stat-value">${s.type}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Completato</div><div class="sd-stat-value">${s.completedAt ? new Date(s.completedAt).toLocaleDateString('it-IT') : '—'}</div></div>`;
+  html += '</div>';
+  if(s.notes){
+    html += `<div><div class="sd-section-label">Note / Watch Order</div><div class="sd-notes">${s.notes.replace(/</g,'&lt;')}</div></div>`;
+  }
+  document.getElementById('sdBody').innerHTML = html;
+
+  document.getElementById('sdFooter').innerHTML =
+    `<button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();backToRoadmap_fromCompleted('${s.id}')" style="flex:1;">↩ In roadmap</button>
+     <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditModal('${s.id}')" style="flex:1;">✎ Modifica</button>`;
+
+  document.getElementById('seriesDetailOverlay').classList.add('open');
 }
 
 function addSeries(){
@@ -2722,14 +2825,27 @@ function toggleEditOngoing(){
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
 }
+function findAnyEntryById(id){
+  let rec = db.series.find(x=>x.id===id);
+  if(rec) return {rec, list:'series'};
+  rec = db.roadmap.find(x=>x.id===id);
+  if(rec) return {rec, list:'roadmap'};
+  rec = db.completed.find(x=>x.id===id);
+  if(rec) return {rec, list:'completed'};
+  rec = db.dropped.find(x=>x.id===id);
+  if(rec) return {rec, list:'dropped'};
+  return null;
+}
 function openEditModal(id){
-  const s=db.series.find(x=>x.id===id);
-  if(!s) return;
+  const found=findAnyEntryById(id);
+  if(!found) return;
+  const s=found.rec;
   _editingSeriesId=id;
   _editOngoing=!!s.ongoing;
   document.getElementById('editModalTitle').value=s.title;
   document.getElementById('editModalEps').value=s.eps;
   document.getElementById('editModalFilms').value=s.films||'';
+  document.getElementById('editModalType').value=s.type||'DUB';
   document.getElementById('editModalNotes').value=s.notes||'';
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
@@ -2746,27 +2862,27 @@ function handleEditOverlayClick(e){
 function saveEditModal(){
   if(!_editingSeriesId) return;
   const id=_editingSeriesId;
-  const s=db.series.find(x=>x.id===id);
-  if(!s) return;
+  const found=findAnyEntryById(id);
+  if(!found) return;
+  const s=found.rec;
   const newTitle=document.getElementById('editModalTitle').value.trim();
   const newEps=parseInt(document.getElementById('editModalEps').value);
   const newFilms=parseInt(document.getElementById('editModalFilms').value)||0;
+  const newType=document.getElementById('editModalType').value;
   const newNotes=document.getElementById('editModalNotes').value.trim();
   if(!newTitle||!newEps||newEps<1){ toast('Dati non validi','error'); return; }
-  s.title=newTitle; s.eps=newEps; s.films=newFilms; s.notes=newNotes; s.ongoing=_editOngoing;
-  [db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r){ r.title=newTitle; r.eps=newEps; } });
+  s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.notes=newNotes; s.ongoing=_editOngoing;
+  // Propaga titolo/episodi/tipo su tutti gli array in cui l'id compare
+  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; } });
   save();
-  // Patch solo il nodo DOM dell'elemento nel catalogo
-  const node=document.getElementById('item-'+id);
-  if(node){
-    const listEl=node.closest('.list');
-    const items=[...listEl.querySelectorAll('.item')];
-    const idx=items.indexOf(node);
-    node.outerHTML=buildItemHTML(s, idx);
-  }
-  // Se è anche in roadmap, aggiorna il nome lì
-  const rmNode=document.querySelector(`#roadmap .rm-item[data-id="${id}"] .rm-name`);
-  if(rmNode){ rmNode.textContent=newTitle; }
+  // Ricostruisce la sezione dove si trova l'elemento modificato
+  if(found.list==='series') renderCatalog();
+  else if(found.list==='roadmap') renderRoadmap();
+  else if(found.list==='completed') renderCompleted();
+  else if(found.list==='dropped') renderDropped();
+  // Se compare anche altrove, aggiorna quelle viste
+  if(found.list!=='roadmap' && db.roadmap.find(x=>x.id===id)) renderRoadmap();
+  if(found.list!=='series' && db.series.find(x=>x.id===id)) renderCatalog();
   updateCatalogStats();
   toast('Serie aggiornata ✓','success');
   closeEditModal();
@@ -2776,14 +2892,17 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEditModal();
 function renderCatalog(){
   const q=(document.getElementById('catalogSearch')?.value||'').toLowerCase();
   const epF=parseInt(document.getElementById('epFilterInput')?.value)||0;
+  const sort=document.getElementById('catalogSort')?.value||'eps';
+  updateCatalogStats();
+  const badge=document.getElementById('epFilterBadge');
+  if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
+  // Evita di ricostruire (e rigiocare la cascata) se niente è cambiato da quando è stata renderizzata l'ultima volta
+  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites)) return;
   let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite));
   const dubs=renderSortedSeries(filtered.filter(s=>s.type==='DUB'));
   const subs=renderSortedSeries(filtered.filter(s=>s.type==='SUB'));
   document.getElementById('dub-count').textContent=dubs.length;
   document.getElementById('sub-count').textContent=subs.length;
-  updateCatalogStats();
-  const badge=document.getElementById('epFilterBadge');
-  if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
   renderList('dub-list',dubs);
   renderList('sub-list',subs);
 }
@@ -2850,7 +2969,7 @@ function buildRmItemHTML(r, i){
     const tooltipText = filmListStr.replace(/"/g,'&quot;').replace(/</g,'&lt;');
     filmsTag = ` · <span class="rm-notes-badge" data-tooltip="${tooltipText}" onmouseenter="showRmTooltip(this)" onmouseleave="hideRmTooltip()">${_filmsCount} FILM</span>`;
   }
-  return `<div class="rm-item ${r.status==='watching'?'watching':''}" data-id="${r.id}" style="animation:itemIn .22s ${i*0.04}s both;cursor:pointer;" onclick="handleRmItemClick(event,'${r.id}')">
+  return `<div class="rm-item ${r.status==='watching'?'watching':''} ${r.status==='paused'?'paused':''}" data-id="${r.id}" style="animation:itemIn .22s ${staggerDelay(i,0.04,0.3)}s both;cursor:pointer;" onclick="handleRmItemClick(event,'${r.id}')">
     <div class="drag-handle">⠿</div>
     <div class="rm-num">${String(i+1).padStart(2,'0')}</div>
     <div class="rm-info">
@@ -2858,17 +2977,12 @@ function buildRmItemHTML(r, i){
       <div class="rm-meta">${r.eps} ep${filmsTag}${_notes ? ' · ' : ''}${notesTooltip}</div>
     </div>
     ${r.status==='watching'?`<div class="watching-tag">watching</div>`:''}
+    ${r.status==='paused'?`<div class="paused-tag">in pausa</div>`:''}
     ${r.status==='watching'?`<div class="ep-stepper"><button class="step-btn" onclick="stepEp('${r.id}',-1)">‹</button><input class="ep-input" type="number" min="0" max="${r.eps}" value="${r.currentEp||0}" onchange="updateEp('${r.id}',this.value)"><span class="ep-total">/${r.eps}</span><button class="step-btn" onclick="stepEp('${r.id}',1)">›</button></div>`:''}
     <span class="badge ${r.type.toLowerCase()}">${r.type}</span>
     <div class="reorder-btns">
       <button class="reorder-btn" onclick="reorderEntry(db.roadmap,'${r.id}',-1,renderRoadmap)" title="Su">▲</button>
       <button class="reorder-btn" onclick="reorderEntry(db.roadmap,'${r.id}',1,renderRoadmap)" title="Giù">▼</button>
-    </div>
-    <div class="rm-actions">
-      <button class="item-btn" onclick="setWatching('${r.id}')" title="Watching">▶</button>
-      <button class="item-btn" onclick="completeEntry('${r.id}')" style="color:var(--green)">✓</button>
-      <button class="item-btn" onclick="backToCalatogo_fromRoadmap('${r.id}')" title="Torna catalogo">↩</button>
-      <button class="item-btn danger" onclick="dropEntry('${r.id}')">✕</button>
     </div>
     ${r.status==='watching'?`<div class="progress-bottom"><div class="progress-bottom-fill" style="width:${pct}%"></div></div>`:''}
   </div>`;
@@ -2879,9 +2993,9 @@ function handleRmItemClick(e, id){
   // Don't trigger if clicking on buttons, inputs, drag handle, or badges
   const tag = e.target.tagName;
   if(tag==='BUTTON'||tag==='INPUT'||e.target.classList.contains('drag-handle')||
-     e.target.classList.contains('rm-notes-badge')||e.target.closest('.rm-actions')||
+     e.target.classList.contains('rm-notes-badge')||
      e.target.closest('.reorder-btns')||e.target.closest('.ep-stepper')) return;
-  openEditModal(id);
+  openRoadmapDetail(id);
 }
 
 function updateEp(id,val){
@@ -2916,6 +3030,60 @@ function setWatching(id){
   }
   toast(item.status==='watching'?`▶ In visione: ${item.title}`:`⏸ Interrotto: ${item.title}`);
 }
+function setPaused(id){
+  const item=db.roadmap.find(r=>r.id===id);
+  if(!item) return;
+  const turningOn = item.status!=='paused';
+  item.status = turningOn ? 'paused' : 'normal';
+  save();
+  const node=document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
+  if(node){
+    const idx=db.roadmap.findIndex(r=>r.id===id);
+    node.outerHTML=buildRmItemHTML(item, idx);
+  }
+  toast(item.status==='paused'?`⏸ In pausa: ${item.title}`:`▶ Ripreso: ${item.title}`);
+}
+
+// ---- ROADMAP ITEM — DETAIL POPUP (riusa #seriesDetailOverlay) ----
+function openRoadmapDetail(id){
+  const r = db.roadmap.find(x=>x.id===id);
+  if(!r) return;
+  _detailSeriesId = id;
+
+  document.getElementById('sdTags').innerHTML =
+    `<span class="badge ${r.type.toLowerCase()}">${r.type}</span>` +
+    (r.status==='watching' ? `<span class="watching-tag">watching</span>` : '') +
+    (r.status==='paused' ? `<span class="paused-tag">in pausa</span>` : '');
+  document.getElementById('sdTitle').textContent = r.title;
+
+  let html = '<div class="sd-stats">';
+  html += `<div class="sd-stat"><div class="sd-stat-label">Episodi</div><div class="sd-stat-value">${r.currentEp||0} / ${r.eps}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Tipo</div><div class="sd-stat-value">${r.type}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Stato</div><div class="sd-stat-value">${r.status==='watching'?'In visione':r.status==='paused'?'In pausa':'Da iniziare'}</div></div>`;
+  html += '</div>';
+  const _srcSeries = db.series.find(x=>x.id===r.id);
+  const _notes = _srcSeries?.notes || r.notes || '';
+  if(_notes){
+    html += `<div><div class="sd-section-label">Note / Watch Order</div><div class="sd-notes">${_notes.replace(/</g,'&lt;')}</div></div>`;
+  }
+  html += `<div class="sd-section-label">Stato visione</div>`;
+  html += `<div class="rm-detail-actions">
+    <button class="rm-detail-action ${r.status==='watching'?'active':''}" onclick="rdToggleWatching('${r.id}')"><span class="rda-icon">▶</span><span>${r.status==='watching'?'Stop':'Watching'}</span></button>
+    <button class="rm-detail-action ${r.status==='paused'?'paused-active':''}" onclick="rdTogglePaused('${r.id}')"><span class="rda-icon">⏸</span><span>${r.status==='paused'?'Riprendi da Pausa':'Pausa'}</span></button>
+    <button class="rm-detail-action danger" onclick="rdDrop('${r.id}')"><span class="rda-icon">✕</span><span>Drop</span></button>
+  </div>`;
+  document.getElementById('sdBody').innerHTML = html;
+
+  document.getElementById('sdFooter').innerHTML =
+    `<button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();completeEntry('${r.id}')" style="flex:1;color:var(--green);">✓ Completato</button>
+     <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditModal('${r.id}')" style="flex:1;">✎ Modifica</button>`;
+
+  document.getElementById('seriesDetailOverlay').classList.add('open');
+}
+function rdToggleWatching(id){ setWatching(id); openRoadmapDetail(id); }
+function rdTogglePaused(id){ setPaused(id); openRoadmapDetail(id); }
+function rdDrop(id){ closeSeriesDetail(); dropEntry(id); }
+
 function dropEntry(id){
   const idx=db.roadmap.findIndex(r=>r.id===id);
   if(idx===-1) return;
@@ -3059,6 +3227,7 @@ function renderRoadmap(){
   document.getElementById('roadmap-count').textContent=db.roadmap.length;
   const watchingEl=document.getElementById('watching-count');
   if(watchingEl) watchingEl.textContent=db.roadmap.filter(r=>r.status==='watching').length;
+  if(_skipIfUnchanged('roadmap')) return;
   if(!db.roadmap.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">▷</div>Roadmap vuota</div>`; return; }
   el.innerHTML=db.roadmap.map((r,i)=>buildRmItemHTML(r,i)).join('');
   initDragDrop(el,db.roadmap,renderRoadmap);
@@ -3066,8 +3235,9 @@ function renderRoadmap(){
 function renderDropped(){
   const el=document.getElementById('dropped'),label=document.getElementById('dropped-label');
   document.getElementById('drop-count').textContent=db.dropped.length;
-  if(!db.dropped.length){ el.innerHTML=''; label.style.display='none'; return; }
+  if(!db.dropped.length){ el.innerHTML=''; label.style.display='none'; _invalidateSig('dropped'); return; }
   label.style.display='flex';
+  if(_skipIfUnchanged('dropped')) return;
   el.innerHTML=db.dropped.map((r,i)=>`<div class="rm-item" style="opacity:0.65" data-id="${r.id}"><div class="drag-handle">⠿</div><div class="rm-num">${String(i+1).padStart(2,'0')}</div><div class="rm-info"><div class="rm-name" style="text-decoration:line-through">${r.title}</div><div class="rm-meta">${r.eps} ep</div></div><span class="badge dropped">dropped</span><div class="rm-actions"><button class="item-btn" onclick="restoreDropped('${r.id}')" title="Ripristina">↩</button><button class="item-btn go-back" onclick="backToCatalogo_fromDropped('${r.id}')" title="Torna catalogo">◌</button></div></div>`).join('');
   initDragDrop(el,db.dropped,renderDropped);
 }
@@ -3092,16 +3262,21 @@ function renderCompleted(){
   document.getElementById('total-eps').textContent=db.completed.reduce((a,r)=>a+(r.eps||0),0);
   document.getElementById('completed-dub-count').textContent=db.completed.filter(r=>r.type==='DUB').length;
   document.getElementById('completed-sub-count').textContent=db.completed.filter(r=>r.type==='SUB').length;
+  if(_skipIfUnchanged('completed', q+'|'+sort+'|'+typeFilter+'|'+epF)) return;
   const el=document.getElementById('completed-list');
   if(!data.length){ el.innerHTML=`<div class="empty">Nessuna serie completata</div>`; return; }
-  el.innerHTML=data.map((r,i)=>`<div class="completed-item" data-id="${r.id}" style="animation:itemIn .22s ${i*0.04}s both"><div class="drag-handle">⠿</div><div class="c-num">${String(i+1).padStart(2,'0')}</div><div class="check-mark">✓</div><div class="c-info"><div class="c-title">${r.title}</div><div class="c-meta">${r.eps} ep · ${new Date(r.completedAt).toLocaleDateString('it-IT')}</div></div><span class="badge ${r.type.toLowerCase()}">${r.type}</span><div class="reorder-btns"><button class="reorder-btn" onclick="reorderEntry(db.completed,'${r.id}',-1,renderCompleted)" title="Su">▲</button><button class="reorder-btn" onclick="reorderEntry(db.completed,'${r.id}',1,renderCompleted)" title="Giù">▼</button></div><div class="c-actions"><button class="item-btn" onclick="backToRoadmap_fromCompleted('${r.id}')">↩</button></div></div>`).join('');
+  el.innerHTML=data.map((r,i)=>`<div class="completed-item" data-id="${r.id}" style="animation:itemIn .22s ${staggerDelay(i,0.04,0.3)}s both;cursor:pointer;" onclick="handleCompletedItemClick(event,'${r.id}')"><div class="drag-handle">⠿</div><div class="c-num">${String(i+1).padStart(2,'0')}</div><div class="check-mark">✓</div><div class="c-info"><div class="c-title">${r.title}</div><div class="c-meta">${r.eps} ep · ${new Date(r.completedAt).toLocaleDateString('it-IT')}</div></div><span class="badge ${r.type.toLowerCase()}">${r.type}</span><div class="reorder-btns"><button class="reorder-btn" onclick="event.stopPropagation();reorderEntry(db.completed,'${r.id}',-1,renderCompleted)" title="Su">▲</button><button class="reorder-btn" onclick="event.stopPropagation();reorderEntry(db.completed,'${r.id}',1,renderCompleted)" title="Giù">▼</button></div></div>`).join('');
   initDragDrop(el,db.completed,renderCompleted);
+}
+function handleCompletedItemClick(e,id){
+  if(e.target.tagName==='BUTTON'||e.target.classList.contains('drag-handle')||e.target.closest('.reorder-btns')) return;
+  openCompletedSeriesDetail(id);
 }
 
 // ---- DRAG & DROP ----
 function initDragDrop(container,dataArray,renderFn){
   if(!container) return;
-  const ITEM_SEL=container.id==='completed-list'?'.completed-item':'.rm-item';
+  const ITEM_SEL=container.querySelector('.completed-item')?'.completed-item':'.rm-item';
   let dragging=null,clone=null,ghost=null,startX=0,startY=0,startRect=null,active=false;
 
   function getItem(el){ return el?el.closest(ITEM_SEL):null; }
@@ -3603,19 +3778,71 @@ function getOrdinal(n){
 
 function buildFilmItemHTML(film, idx){
   const ordinalBadge = film.seriesOrder ? `<span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted2);background:var(--surface3);border:1px solid var(--border);padding:2px 7px;border-radius:20px;">${getOrdinal(film.seriesOrder)}</span>` : '';
-  return `<div class="film-item" data-id="${film.id}">
+  return `<div class="film-item" data-id="${film.id}" style="cursor:pointer;" onclick="openFilmDetail('${film.id}')">
     ${ordinalBadge}
     <div class="film-item-info">
       <div class="film-item-title">${film.title}</div>
       ${film.notes ? `<div class="film-item-meta">${film.notes}</div>` : ''}
     </div>
     <span class="badge ${film.type.toLowerCase()}">${film.type}</span>
-    <div class="film-item-actions">
-      <button class="item-btn" onclick="openEditFilmModal('${film.id}')" title="Modifica">✎</button>
-      <button class="item-btn" style="color:var(--green)" onclick="completeFilm('${film.id}')" title="Segna completato">✓</button>
-      <button class="item-btn danger" onclick="removeFilm('${film.id}')" title="Rimuovi">✕</button>
-    </div>
   </div>`;
+}
+
+// ---- FILM DETAIL POPUP (stesso popup delle serie, riusa #seriesDetailOverlay) ----
+function openFilmDetail(id){
+  const inCompleted = (db.filmsCompleted||[]).some(f=>f.id===id);
+  const film = inCompleted ? (db.filmsCompleted||[]).find(f=>f.id===id) : (db.films||[]).find(f=>f.id===id);
+  if(!film) return;
+
+  const allSeriesMap2 = {};
+  (db.filmSeries||[]).forEach(s=>{ allSeriesMap2[s.id]=s; });
+  getAnimeSagas().forEach(s=>{ if(!allSeriesMap2[s.id]) allSeriesMap2[s.id]=s; });
+  const saga = film.seriesId ? allSeriesMap2[film.seriesId] : null;
+  const sagaTitle = saga ? saga.title : (film.seriesId ? findAnySeriesTitleById(film.seriesId) : null);
+
+  document.getElementById('sdTags').innerHTML =
+    `<span class="badge ${film.type.toLowerCase()} type-toggle-badge" onclick="event.stopPropagation();toggleFilmType('${film.id}')" title="Cambia SUB/DUB">${film.type}<span class="type-toggle-icon">⇄</span></span>` +
+    (inCompleted ? `<span class="ongoing-tag" style="color:var(--green);background:rgba(46,232,165,0.12);border-color:rgba(46,232,165,0.28);">✓ Completato</span>` : '') +
+    (sagaTitle ? `<span class="film-tag">${sagaTitle}${film.seriesOrder ? ' · '+getOrdinal(film.seriesOrder) : ''}</span>` : '');
+  document.getElementById('sdTitle').textContent = film.title;
+
+  let html = '<div class="sd-stats">';
+  html += `<div class="sd-stat"><div class="sd-stat-label">Tipo</div><div class="sd-stat-value">${film.type}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">${inCompleted ? 'Completato' : 'Aggiunto'}</div><div class="sd-stat-value">${(inCompleted?film.completedAt:film.addedAt) ? new Date(inCompleted?film.completedAt:film.addedAt).toLocaleDateString('it-IT') : '—'}</div></div>`;
+  if(sagaTitle) html += `<div class="sd-stat"><div class="sd-stat-label">Ordine</div><div class="sd-stat-value">${film.seriesOrder ? getOrdinal(film.seriesOrder) : '—'}</div></div>`;
+  html += '</div>';
+  if(sagaTitle) html += `<div><div class="sd-section-label">Saga</div><div class="sd-notes">${sagaTitle}</div></div>`;
+  if(film.notes) html += `<div><div class="sd-section-label">Note</div><div class="sd-notes">${film.notes.replace(/</g,'&lt;')}</div></div>`;
+  document.getElementById('sdBody').innerHTML = html;
+
+  document.getElementById('sdFooter').innerHTML = inCompleted
+    ? `<button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();unCompleteFilm('${film.id}')" style="flex:1;">↩ In catalogo</button>
+       <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditFilmModal('${film.id}')" style="flex:1;">✎ Modifica</button>
+       <button class="btn btn-sm" onclick="closeSeriesDetail();removeCompletedFilm('${film.id}')" style="background:var(--red);border:none;box-shadow:0 4px 12px rgba(255,59,74,0.35);flex:0 0 auto;">✕</button>`
+    : `<button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();completeFilm('${film.id}')" style="flex:1;">✓ Completa</button>
+       <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditFilmModal('${film.id}')" style="flex:1;">✎ Modifica</button>
+       <button class="btn btn-sm" onclick="closeSeriesDetail();removeFilm('${film.id}')" style="background:var(--red);border:none;box-shadow:0 4px 12px rgba(255,59,74,0.35);flex:0 0 auto;">✕</button>`;
+
+  document.getElementById('seriesDetailOverlay').classList.add('open');
+}
+
+// Cambia rapidamente SUB/DUB su un film, sia in catalogo che tra i completati
+function toggleFilmType(id){
+  const inCompleted = (db.filmsCompleted||[]).some(f=>f.id===id);
+  const film = inCompleted ? (db.filmsCompleted||[]).find(f=>f.id===id) : (db.films||[]).find(f=>f.id===id);
+  if(!film) return;
+  film.type = film.type==='DUB' ? 'SUB' : 'DUB';
+  save();
+  renderFilms(); renderFilmsCompleted(); updateFilmStats();
+  toast(`Tipo cambiato in ${film.type}`,'success');
+  openFilmDetail(id);
+}
+
+function removeCompletedFilm(id){
+  const film = (db.filmsCompleted||[]).find(f=>f.id===id);
+  db.filmsCompleted = (db.filmsCompleted||[]).filter(f=>f.id!==id);
+  save(); renderFilmsCompleted(); updateFilmStats();
+  toast(film ? `Rimosso: ${film.title}` : 'Film rimosso', 'info');
 }
 
 // ---- FILM VIEW TABS ----
@@ -3661,6 +3888,7 @@ function applyFilmTabVisibility(){
 }
 
 function renderFilms(){
+ try{
   const _curSeries = document.getElementById('filmSeriesSelect')?.value || null;
   populateFilmSeriesSelect('filmSeriesSelect','filmOrderGroup','filmOrderSelect', null, _curSeries, null);
   updateFilmStats();
@@ -3670,21 +3898,29 @@ function renderFilms(){
   (db.filmSeries||[]).forEach(s=>{ allSeriesMap[s.id]=s; });
   getAnimeSagas().forEach(s=>{ if(!allSeriesMap[s.id]) allSeriesMap[s.id]=s; });
 
+  // Difesa extra: un film completato non deve mai comparire anche tra i "da vedere"
+  // (può succedere con dati vecchi/corrotti da versioni precedenti dell'app)
+  const completedFilmIds = new Set((db.filmsCompleted||[]).map(f=>f.id));
+  if((db.films||[]).some(f=>completedFilmIds.has(f.id))){
+    db.films = db.films.filter(f=>!completedFilmIds.has(f.id));
+    save();
+  }
+
   const q = (document.getElementById('filmSearch')?.value||'').toLowerCase();
   const sort = document.getElementById('filmSort')?.value||'title';
   const typeF = document.getElementById('filmTypeFilter')?.value||'all';
   let films = (db.films||[]).filter(f=>
+    !completedFilmIds.has(f.id) &&
     (!q || f.title.toLowerCase().includes(q)) &&
     (typeF==='all' || f.type===typeF)
   );
   films.sort((a,b)=> sort==='recent' ? (b.addedAt||0)-(a.addedAt||0) : a.title.localeCompare(b.title));
 
+  if(_skipIfUnchanged('films', q+'|'+sort+'|'+typeF)){ applyFilmTabVisibility(); return; }
+
   const container = document.getElementById('film-catalog-container');
   if(!container) return;
   if(!films.length){ container.innerHTML=`<div class="empty"><div class="empty-icon">◌</div>Nessun film nel catalogo</div>`; applyFilmTabVisibility(); return; }
-
-  // Pre-compute completed film set
-  const completedFilmIds = new Set((db.filmsCompleted||[]).map(f=>f.id));
 
   let html = '';
 
@@ -3785,6 +4021,11 @@ function renderFilms(){
 
   container.innerHTML = html;
   applyFilmTabVisibility();
+ }catch(err){
+   console.error('renderFilms error:', err);
+   const c = document.getElementById('film-catalog-container');
+   if(c) c.innerHTML = `<div class="empty">Errore nel caricamento dei film</div>`;
+ }
 }
 
 function toggleFranchiseCollapse(fsId){
@@ -3792,12 +4033,16 @@ function toggleFranchiseCollapse(fsId){
   if(block) block.classList.toggle('collapsed');
 }
 
-function renderFilmsCompletedInto(searchId, sortId, containerId, countId){
+function renderFilmsCompletedInto(searchId, sortId, containerId, countId, dubCountId, subCountId){
   const container = document.getElementById(containerId);
   if(!container) return;
+  try{
 
   const q = (document.getElementById(searchId)?.value||'').toLowerCase();
   const sort = document.getElementById(sortId)?.value||'recent';
+  // Difesa extra: rimuove eventuali doppioni di id (dati corrotti da versioni precedenti)
+  const seenIds = new Set();
+  db.filmsCompleted = (db.filmsCompleted||[]).filter(f=>{ if(seenIds.has(f.id)) return false; seenIds.add(f.id); return true; });
   let films = (db.filmsCompleted||[]).filter(f=> !q || f.title.toLowerCase().includes(q));
   films.sort((a,b)=> sort==='recent' ? (b.completedAt||0)-(a.completedAt||0) : a.title.localeCompare(b.title));
 
@@ -3805,6 +4050,17 @@ function renderFilmsCompletedInto(searchId, sortId, containerId, countId){
     const countEl = document.getElementById(countId);
     if(countEl) countEl.textContent = films.length;
   }
+  if(dubCountId){
+    const el = document.getElementById(dubCountId);
+    if(el) el.textContent = (db.filmsCompleted||[]).filter(f=>f.type==='DUB').length;
+  }
+  if(subCountId){
+    const el = document.getElementById(subCountId);
+    if(el) el.textContent = (db.filmsCompleted||[]).filter(f=>f.type==='SUB').length;
+  }
+
+  // Evita di ricostruire (e rigiocare la cascata) se niente è cambiato dall'ultima volta
+  if(_skipIfUnchanged('filmsCompleted:'+containerId, q+'|'+sort)) return;
 
   if(!films.length){ container.innerHTML=`<div class="empty">Nessun film completato</div>`; return; }
 
@@ -3815,26 +4071,37 @@ function renderFilmsCompletedInto(searchId, sortId, containerId, countId){
     const saga = f.seriesId ? allSeriesMap2[f.seriesId] : null;
     const sagaTitle = saga ? saga.title : (f.seriesId ? findAnySeriesTitleById(f.seriesId) : null);
     const ordStr = (sagaTitle && f.seriesOrder) ? `${getOrdinal(f.seriesOrder)} · ` : '';
-    return `<div class="film-completed-item" style="animation:itemIn .22s ${i*0.04}s both">
+    return `<div class="completed-item" data-id="${f.id}" style="animation:itemIn .22s ${staggerDelay(i,0.04,0.3)}s both;cursor:pointer;" onclick="handleCompletedFilmItemClick(event,'${f.id}')">
+      <div class="drag-handle">⠿</div>
+      <div class="c-num">${String(i+1).padStart(2,'0')}</div>
       <div class="check-mark">✓</div>
       <div class="c-info">
         <div class="c-title">${f.title}</div>
-        <div class="film-completed-saga">${sagaTitle ? `${sagaTitle} · ${ordStr}` : ''}${new Date(f.completedAt).toLocaleDateString('it-IT')}</div>
+        <div class="c-meta">${sagaTitle ? `${sagaTitle} · ${ordStr}` : ''}${new Date(f.completedAt).toLocaleDateString('it-IT')}</div>
       </div>
       <span class="badge ${f.type.toLowerCase()}">${f.type}</span>
-      <div class="c-actions" style="opacity:1">
-        <button class="item-btn" onclick="openEditFilmModal('${f.id}')" title="Modifica">✎</button>
-        <button class="item-btn" onclick="unCompleteFilm('${f.id}')" title="Riporta in catalogo">↩</button>
+      <div class="reorder-btns">
+        <button class="reorder-btn" onclick="event.stopPropagation();reorderEntry(db.filmsCompleted,'${f.id}',-1,renderFilmsCompleted)" title="Su">▲</button>
+        <button class="reorder-btn" onclick="event.stopPropagation();reorderEntry(db.filmsCompleted,'${f.id}',1,renderFilmsCompleted)" title="Giù">▼</button>
       </div>
     </div>`;
   }).join('');
+  initDragDrop(container, db.filmsCompleted, ()=>renderFilmsCompletedInto(searchId,sortId,containerId,countId,dubCountId,subCountId));
+  }catch(err){
+    console.error('renderFilmsCompletedInto error:', err);
+    container.innerHTML = `<div class="empty">Errore nel caricamento dei film completati</div>`;
+  }
+}
+function handleCompletedFilmItemClick(e,id){
+  if(e.target.tagName==='BUTTON'||e.target.classList.contains('drag-handle')||e.target.closest('.reorder-btns')) return;
+  openFilmDetail(id);
 }
 
 function renderFilmsCompleted(){
   // Vista dentro Catalogo → Film → tab "Completati"
-  renderFilmsCompletedInto('filmCompletedSearch','filmCompletedSort','film-completed-container');
+  renderFilmsCompletedInto('filmCompletedSearch','filmCompletedSort','film-completed-container','film-completed-count-stat','film-completed-dub-count','film-completed-sub-count');
   // Vista dedicata Completate → Film completati
-  renderFilmsCompletedInto('completateFilmSearch','completateFilmSort','completate-film-list','completate-film-count');
+  renderFilmsCompletedInto('completateFilmSearch','completateFilmSort','completate-film-list','completate-film-count','completate-film-dub-count','completate-film-sub-count');
 }
 
 
