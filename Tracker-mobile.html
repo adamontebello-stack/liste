@@ -2371,7 +2371,7 @@ function renderList(id,data){
     if(s.films>0) tagsHtml+='<span class="item-tag films">'+s.films+' FILM</span>';
     const tagsRow=tagsHtml?'<div class="item-tags">'+tagsHtml+'</div>':'';
     const notesRow=s.notes?'<div class="item-notes-row">📝 '+escHtml(s.notes)+'</div>':'';
-    return '<div class="item tap-open" style="animation:itemIn .2s '+(i*0.025)+'s both" id="item-'+s.id+'" onclick="openCatalogMenu(\''+s.id+'\')">'
+    return '<div class="item tap-open" style="animation:itemIn .2s '+(i*0.025)+'s both" id="item-'+s.id+'" onclick="event.stopPropagation();openCatalogMenu(\''+s.id+'\')">'
       +'<div class="item-num">'+(i+1)+'</div>'
       +'<div class="item-body">'
         +'<div class="item-title">'+escHtml(s.title)+'</div>'
@@ -2379,7 +2379,7 @@ function renderList(id,data){
       +'</div>'
       +'<div class="item-eps">'+s.eps+'</div>'
       +'<div class="item-actions">'
-        +'<button class="item-btn fav-btn'+(s.favorite?' active':'')+'" onclick="event.stopPropagation();toggleFavorite(\''+s.id+'\')" title="Preferito">★</button>'
+        +'<button class="item-btn fav-btn'+(s.favorite?' active':'')+'" onclick="event.stopPropagation();toggleFavorite(\''+s.id+'\');this.blur()" title="Preferito">★</button>'
       +'</div>'
     +'</div>';
   }).join('');
@@ -3373,7 +3373,7 @@ function renderFilms(){
       const orderBadge=(showBadge&&f.seriesOrder!=null)?`<span class="film-order-badge">${f.seriesOrder}°</span>`:'';
       const serieNameHtml=(rec&&!insideSaga)?`<div class="film-serie-name">${rec._source==='anime'?'📺':'🎬'} ${escHtml(rec.title)}</div>`:'';
       const notesHtml=f.notes?`<div class="item-notes-row">📝 ${escHtml(f.notes)}</div>`:'';
-      return `<div class="rm-item tap-open" data-id="${f.id}" onclick="openFilmCatalogMenu('${f.id}')" style="animation:itemIn .2s ${i*0.025}s both">
+      return `<div class="rm-item tap-open" data-id="${f.id}" onclick="event.stopPropagation();openFilmCatalogMenu('${f.id}')" style="animation:itemIn .2s ${i*0.025}s both">
         <div class="rm-num">${String(i+1).padStart(2,'0')}</div>
         <div class="rm-info">
           <div style="display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;">
