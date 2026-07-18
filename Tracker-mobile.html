@@ -445,6 +445,8 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background 0.15s;
 }
 .item:last-child { border-bottom: none; }
+.item.tap-open { cursor: pointer; }
+.item.tap-open:active { background: rgba(255,255,255,0.04); }
 .item-num {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.6rem; color: var(--muted2);
@@ -775,43 +777,52 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-top: 2px; font-family: 'JetBrains Mono', monospace;
 }
 
-/* Progress row — full width block under title */
-.progress-row {
-  display: flex; flex-direction: column; gap: 8px;
-  margin-top: 10px; width: 100%;
+/* Progress — rendered as the item's bottom edge, not an inline bar */
+.progress-edge-track {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: var(--surface3);
 }
-.progress-bar { width: 100%; height: 4px; background: var(--surface3); border-radius: 9px; overflow: hidden; }
-.progress-fill {
-  height: 100%;
+.progress-edge-fill {
+  position: absolute; left: 0; bottom: 0; height: 3px;
   background: linear-gradient(90deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 6px var(--accentGlow);
   transition: width 0.4s cubic-bezier(0.34,1.2,0.64,1);
-  border-radius: 9px; box-shadow: 0 0 6px var(--accentGlow);
+  border-radius: 0 3px 3px 0;
 }
 .ep-stepper { display: flex; align-items: center; gap: 6px; }
-.ep-stepper-row { display: flex; align-items: center; gap: 8px; }
+.ep-stepper-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 8px; width: 100%; }
 .step-btn {
-  background: var(--surface3);
-  border: 1px solid var(--border2);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.35);
   color: var(--accent2);
-  width: 36px; height: 36px;
-  border-radius: 9px; cursor: pointer;
-  font-size: 1.1rem; line-height: 1;
+  width: 40px; height: 30px;
+  border-radius: 8px; cursor: pointer;
+  font-size: 1rem; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   -webkit-appearance: none;
   user-select: none; flex-shrink: 0;
 }
 .step-btn:active { background: var(--accent); border-color: var(--accent); color: white; transform: scale(0.92); }
-.ep-input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text); width: 52px;
-  padding: 6px 4px; border-radius: 9px;
-  font-family: 'JetBrains Mono', monospace; text-align: center;
-  font-size: 0.82rem; -webkit-appearance: none;
-  transition: border-color 0.2s;
+.ep-value-box {
+  justify-self: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  background: transparent; border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 8px; height: 30px; padding: 0 8px;
 }
-.ep-input:focus { border-color: var(--accent); outline: none; }
-.progress-num { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--muted); }
+.ep-input {
+  background: transparent;
+  border: none;
+  color: var(--text); width: 26px;
+  padding: 0; height: 100%;
+  font-family: 'JetBrains Mono', monospace; text-align: center;
+  font-size: 0.78rem; -webkit-appearance: none;
+}
+.ep-input:focus { outline: none; }
+.progress-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text); white-space: nowrap;
+  opacity: 0.82;
+  display: flex; align-items: center; flex-shrink: 0;
+}
 
 /* Always-visible actions on mobile — single menu button */
 .rm-actions, .c-actions {
@@ -875,8 +886,8 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Menu trigger button on rm-items */
 .menu-btn {
-  background: var(--surface3);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.35);
   color: var(--muted2);
   width: 34px; height: 34px;
   border-radius: 9px; cursor: pointer;
@@ -948,6 +959,28 @@ input[type="number"] { -moz-appearance: textfield; }
   -webkit-appearance: none; user-select: none;
 }
 .reorder-btn:active { background: var(--accent); border-color: var(--accent); color: white; transform: scale(0.92); }
+
+/* Roadmap mode toggle row */
+.roadmap-mode-row { display: flex; gap: 8px; margin: 2px 0 10px; }
+.mode-toggle-btn {
+  flex: 1; background: var(--surface3); border: 1px solid var(--border);
+  color: var(--muted2); padding: 10px 12px; border-radius: 12px;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.18s; -webkit-appearance: none; font-family: 'Nunito', sans-serif;
+}
+.mode-toggle-btn.active { background: var(--accentGlow2); border-color: var(--accent); color: var(--accent2); }
+.mode-toggle-btn:active { transform: scale(0.96); }
+
+/* Roadmap modes: drag handle & move buttons only during "riordina";
+   no action buttons at all during "modifica" (tap the item instead) */
+#roadmap .drag-handle, #roadmap .reorder-btns { display: none; }
+#roadmap.mode-reorder .drag-handle, #roadmap.mode-reorder .reorder-btns { display: flex; }
+#roadmap.mode-reorder .rm-actions .menu-btn { display: none; }
+#roadmap.mode-edit .rm-actions { display: none; }
+#roadmap.mode-edit .rm-item { cursor: pointer; }
+#roadmap.mode-edit .rm-item:active { background: var(--surface3); }
+#roadmap.mode-reorder .rm-item { padding-left: 8px; }
 
 /* Section label */
 .section-label {
@@ -1541,6 +1574,8 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ===== ROADMAP DETAIL DRAWER ===== */
 .rm-item.has-detail { cursor: pointer; }
 .rm-item.has-detail:active { background: var(--surface3); }
+.rm-item.tap-open { cursor: pointer; }
+.rm-item.tap-open:active { background: var(--surface3); }
 .rm-info-icon {
   display: inline-flex; align-items: center;
   font-size: 0.54rem; font-weight: 700; letter-spacing: 0.08em;
@@ -1721,7 +1756,7 @@ input[type="number"] { -moz-appearance: textfield; }
       <!-- Catalogo -->
       <button class="add-btn topbar-action" data-section="catalogo" onclick="openAddSeriesPopup()">＋ Aggiungi serie</button>
       <!-- Film -->
-      <button class="btn btn-ghost btn-sm topbar-action" data-section="film-section" style="display:none" onclick="openFilmSeriesManager()">Saghe</button>
+      <button class="btn btn-ghost btn-sm topbar-action" data-section="film-section" style="display:none" onclick="openFilmSeriesManager()">🎬 Saghe</button>
       <button class="add-btn topbar-action" data-section="film-section" style="display:none" onclick="openAddFilmPopup()">＋ Aggiungi</button>
       <!-- Roadmap -->
       <button class="btn btn-ghost btn-sm topbar-action" data-section="programma" style="display:none" onclick="addRandom()">⚄ Random</button>
@@ -1845,6 +1880,10 @@ input[type="number"] { -moz-appearance: textfield; }
     <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
     <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
     <div class="stat-pill"><span class="dot amber"></span> Pattern: <strong id="pattern-display">DUB</strong></div>
+  </div>
+  <div class="roadmap-mode-row">
+    <button class="mode-toggle-btn" id="rmModeEditBtn" onclick="setRoadmapMode('edit')">✎ Modifica</button>
+    <button class="mode-toggle-btn" id="rmModeReorderBtn" onclick="setRoadmapMode('reorder')">⇅ Riordina</button>
   </div>
   <div class="roadmap" id="roadmap"></div>
   <div class="section-label" id="dropped-label" style="display:none; margin: 10px 0 6px;">Droppate</div>
@@ -2046,7 +2085,7 @@ input[type="number"] { -moz-appearance: textfield; }
 <div class="popup-overlay" id="filmSeriesManagerPopup">
   <div class="popup-box" onclick="event.stopPropagation()">
     <div class="popup-header">
-      <span class="popup-title">Gestisci Saghe</span>
+      <span class="popup-title">🎬 Gestisci Saghe</span>
       <button class="popup-close" onclick="closeFilmSeriesManager()">✕</button>
     </div>
     <div class="popup-field">
@@ -2070,7 +2109,7 @@ input[type="number"] { -moz-appearance: textfield; }
 <div class="popup-overlay" id="addFilmPopup">
   <div class="popup-box" onclick="event.stopPropagation()">
     <div class="popup-header">
-      <span class="popup-title">Nuovo film</span>
+      <span class="popup-title">🎬 Nuovo film</span>
       <button class="popup-close" onclick="closeAddFilmPopup()">✕</button>
     </div>
     <div class="popup-field">
@@ -2332,7 +2371,7 @@ function renderList(id,data){
     if(s.films>0) tagsHtml+='<span class="item-tag films">'+s.films+' FILM</span>';
     const tagsRow=tagsHtml?'<div class="item-tags">'+tagsHtml+'</div>':'';
     const notesRow=s.notes?'<div class="item-notes-row">📝 '+escHtml(s.notes)+'</div>':'';
-    return '<div class="item" style="animation:itemIn .2s '+(i*0.025)+'s both" id="item-'+s.id+'">'
+    return '<div class="item tap-open" style="animation:itemIn .2s '+(i*0.025)+'s both" id="item-'+s.id+'" onclick="openCatalogMenu(\''+s.id+'\')">'
       +'<div class="item-num">'+(i+1)+'</div>'
       +'<div class="item-body">'
         +'<div class="item-title">'+escHtml(s.title)+'</div>'
@@ -2341,7 +2380,6 @@ function renderList(id,data){
       +'<div class="item-eps">'+s.eps+'</div>'
       +'<div class="item-actions">'
         +'<button class="item-btn fav-btn'+(s.favorite?' active':'')+'" onclick="event.stopPropagation();toggleFavorite(\''+s.id+'\')" title="Preferito">★</button>'
-        +'<button class="menu-btn" onclick="event.stopPropagation();openCatalogMenu(\''+s.id+'\')">···</button>'
       +'</div>'
     +'</div>';
   }).join('');
@@ -2590,10 +2628,13 @@ function stepEp(id,delta){
 function _updateProgressDOM(id, item){
   const rmEl=document.querySelector(`.rm-item[data-id="${id}"]`);
   if(!rmEl) return;
-  const fill=rmEl.querySelector('.progress-fill');
+  const fill=rmEl.querySelector('.progress-edge-fill');
   const inp=rmEl.querySelector('.ep-input');
-  if(fill) fill.style.width=Math.round((item.currentEp||0)/item.eps*100)+'%';
+  const num=rmEl.querySelector('.progress-num');
+  const pct=Math.round((item.currentEp||0)/item.eps*100);
+  if(fill) fill.style.width=pct+'%';
   if(inp) inp.value=item.currentEp||0;
+  if(num) num.textContent='/ '+item.eps+' · '+pct+'%';
 }
 
 // ---- ACTION SHEET ----
@@ -2636,7 +2677,7 @@ function openRoadmapMenu(id){
       label: r.status==='watching'?'Interrompi visione':'Segna come In visione',
       action: () => setWatching(id) },
   ];
-  if(r.status!=='paused'){
+  if(r.status==='watching'){
     buttons.push({ icon: '⏸', iconBg:'gray-bg', cls:'',
       label: 'Metti in pausa',
       action: () => setPaused(id) });
@@ -2644,10 +2685,10 @@ function openRoadmapMenu(id){
   buttons.push(
     { icon: '✓', iconBg:'green-bg', cls:'green', label:'Completa',
       action: () => completeEntry(id) },
+    { icon: '✎', iconBg:'blue-bg', cls:'blue', label:'Modifica',
+      action: () => openEditModal(id) },
     { icon: '↩', iconBg:'blue-bg', cls:'blue', label:'Torna al catalogo',
       action: () => backToCalatogo_fromRoadmap(id) },
-	{ icon: '✎', iconBg:'blue-bg', cls:'blue', label:'Modifica',
-      action: () => openEditModal(id) },
     { icon: '✕', iconBg:'red-bg', cls:'red', label:'Droppa',
       action: () => dropEntry(id) },
   );
@@ -2686,26 +2727,36 @@ function openCatalogMenu(id){
 }
 
 // ---- RENDER ROADMAP ----
+// ---- ROADMAP MODE (normal / riordina / modifica) ----
+let _roadmapMode = 'normal';
+function setRoadmapMode(mode){
+  _roadmapMode = (_roadmapMode===mode) ? 'normal' : mode;
+  document.getElementById('rmModeEditBtn').classList.toggle('active', _roadmapMode==='edit');
+  document.getElementById('rmModeReorderBtn').classList.toggle('active', _roadmapMode==='reorder');
+  renderRoadmap();
+}
 function renderRoadmap(){
   const el=document.getElementById('roadmap');
   document.getElementById('roadmap-count').textContent=db.roadmap.length;
   document.getElementById('pattern-display').textContent=PATTERN[db.patternIndex];
+  el.className='roadmap mode-'+_roadmapMode;
   if(!db.roadmap.length){ el.innerHTML='<div class="empty"><div class="empty-icon">▷</div>Roadmap vuota</div>'; return; }
+  const mode=_roadmapMode;
   el.innerHTML=db.roadmap.map((r,i)=>{
     const isW=r.status==='watching';
     const isP=r.status==='paused';
     const watchTag=isW?'<div class="watching-tag" style="flex-shrink:0">WATCHING</div>':'';
     const pausedTag=isP?'<div class="paused-tag" style="flex-shrink:0">IN PAUSA</div>':'';
     const pct=Math.round((r.currentEp||0)/r.eps*100);
-    const progressRow=isW
-      ?'<div class="progress-row">'
-        +'<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
-        +'<div class="ep-stepper-row" onclick="event.stopPropagation()">'
-          +'<button class="step-btn" onclick="event.stopPropagation();stepEp(\''+r.id+'\',-1)">‹</button>'
+    const progressEdge=isW?'<div class="progress-edge-track"></div><div class="progress-edge-fill" style="width:'+pct+'%"></div>':'';
+    const stepperRow=isW
+      ?'<div class="ep-stepper-row" onclick="event.stopPropagation()">'
+        +'<button class="step-btn" onclick="event.stopPropagation();stepEp(\''+r.id+'\',-1)">‹</button>'
+        +'<div class="ep-value-box">'
           +'<input class="ep-input" type="number" min="0" max="'+r.eps+'" value="'+(r.currentEp||0)+'" onclick="event.stopPropagation()" onchange="event.stopPropagation();updateEp(\''+r.id+'\',this.value)">'
-          +'<button class="step-btn" onclick="event.stopPropagation();stepEp(\''+r.id+'\',1)">›</button>'
-          +'<span class="progress-num">/ '+r.eps+'</span>'
+          +'<span class="progress-num">/ '+r.eps+' · '+pct+'%</span>'
         +'</div>'
+        +'<button class="step-btn" onclick="event.stopPropagation();stepEp(\''+r.id+'\',1)">›</button>'
       +'</div>'
       :'';
     const series=db.series.find(s=>s.id===r.id);
@@ -2714,8 +2765,9 @@ function renderRoadmap(){
     const filmCount=hasFilms?series.films:0;
     const infoIcons=(hasNotes?'<span class="rm-info-icon notes">NOTE</span>':'')
                    +(hasFilms?'<span class="rm-info-icon films">'+filmCount+' FILM</span>':'');
-    const canTap=hasNotes||hasFilms;
-    return '<div class="rm-item '+(isW?'watching':'')+(isP?' paused':'')+(canTap?' has-detail':'')+'" data-id="'+r.id+'" style="animation:itemIn .22s '+(i*0.04)+'s both"'+(canTap?' onclick="event.stopPropagation();openRoadmapDetail(\''+r.id+'\')"':'')+' >'
+    const canTap = mode==='edit' ? true : (mode==='normal' && (hasNotes||hasFilms));
+    const tapAction = mode==='edit' ? ("openEditModal('"+r.id+"')") : ("openRoadmapDetail('"+r.id+"')");
+    return '<div class="rm-item '+(isW?'watching':'')+(isP?' paused':'')+(canTap?' has-detail':'')+'" data-id="'+r.id+'" style="animation:itemIn .22s '+(i*0.04)+'s both"'+(canTap?' onclick="event.stopPropagation();'+tapAction+'"':'')+' >'
       +'<div class="drag-handle">⠿</div>'
       +'<div class="rm-num">'+String(i+1).padStart(2,'0')+'</div>'
       +'<div class="rm-info">'
@@ -2724,7 +2776,7 @@ function renderRoadmap(){
           +watchTag+pausedTag
         +'</div>'
         +'<div class="rm-meta" style="margin-top:4px;display:flex;align-items:center;gap:6px;">'+r.eps+' ep · <span class="badge '+r.type.toLowerCase()+'" style="padding:1px 6px;font-size:0.56rem">'+r.type+'</span>'+infoIcons+'</div>'
-        +progressRow
+        +stepperRow
       +'</div>'
       +'<div class="rm-actions">'
         +'<div class="reorder-btns">'
@@ -2733,6 +2785,7 @@ function renderRoadmap(){
         +'</div>'
         +'<button class="menu-btn" onclick="event.stopPropagation();openRoadmapMenu(\''+r.id+'\')">···</button>'
       +'</div>'
+      +progressEdge
     +'</div>';
   }).join('');
   initDragDrop(el,db.roadmap,renderRoadmap);
@@ -3006,12 +3059,12 @@ function populateFilmSagaSelect(selectId, currentSeriesId='', excludeFilmId=null
 
   let html='<option value="">— Stand-alone —</option>';
   if(animeAvail.length){
-    html+=`<optgroup label="Saga Anime">`;
+    html+=`<optgroup label="📺 Saga Anime">`;
     animeAvail.forEach(s=>{ html+=`<option value="${s.id}"${s.id===currentSeriesId?' selected':''}>${escHtml(s.title)}</option>`; });
     html+='</optgroup>';
   }
   if(filmAvail.length){
-    html+=`<optgroup label="Saga Film">`;
+    html+=`<optgroup label="🎬 Saga Film">`;
     filmAvail.forEach(s=>{ html+=`<option value="${s.id}"${s.id===currentSeriesId?' selected':''}>${escHtml(s.title)}</option>`; });
     html+='</optgroup>';
   }
@@ -3309,18 +3362,18 @@ function renderFilms(){
     <div class="stat-pill"><span class="dot green"></span> Completati: <strong>${db.filmsCompleted.length}</strong></div>`;
 
   const el=document.getElementById('film-list');
-  if(!data.length){ el.innerHTML='<div class="empty"><div class="empty-icon"></div>Nessun film in catalogo</div>'; }
+  if(!data.length){ el.innerHTML='<div class="empty"><div class="empty-icon">🎬</div>Nessun film in catalogo</div>'; }
   else {
     const buildFilmItem=(f,i,showBadge=false,insideSaga=false)=>{
       const rec=f.seriesId?getSeriesRecord(f.seriesId):null;
       const typeColor=f.type==='DUB'?'var(--dub-color)':'var(--sub-color)';
       const tagHtml=(rec&&!insideSaga)
-        ?`<span class="film-tag da-serie">${rec._source==='anime'?'anime':'saga'}</span>`
+        ?`<span class="film-tag da-serie">${rec._source==='anime'?'📺 anime':'🎬 saga'}</span>`
         :(!rec?`<span class="film-tag standalone">stand-alone</span>`:'');
       const orderBadge=(showBadge&&f.seriesOrder!=null)?`<span class="film-order-badge">${f.seriesOrder}°</span>`:'';
-      const serieNameHtml=(rec&&!insideSaga)?`<div class="film-serie-name">${escHtml(rec.title)}</div>`:'';
-      const notesHtml=f.notes?`<div class="item-notes-row"> ${escHtml(f.notes)}</div>`:'';
-      return `<div class="rm-item" data-id="${f.id}" style="animation:itemIn .2s ${i*0.025}s both">
+      const serieNameHtml=(rec&&!insideSaga)?`<div class="film-serie-name">${rec._source==='anime'?'📺':'🎬'} ${escHtml(rec.title)}</div>`:'';
+      const notesHtml=f.notes?`<div class="item-notes-row">📝 ${escHtml(f.notes)}</div>`:'';
+      return `<div class="rm-item tap-open" data-id="${f.id}" onclick="openFilmCatalogMenu('${f.id}')" style="animation:itemIn .2s ${i*0.025}s both">
         <div class="rm-num">${String(i+1).padStart(2,'0')}</div>
         <div class="rm-info">
           <div style="display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;">
@@ -3329,9 +3382,6 @@ function renderFilms(){
           </div>
           <div class="item-tags" style="margin-top:4px">${tagHtml}<span class="film-tag" style="color:${typeColor};background:${f.type==='DUB'?'var(--dub-bg)':'var(--sub-bg)'};border:1px solid ${f.type==='DUB'?'var(--dub-border)':'var(--sub-border)'}">${f.type}</span></div>
           ${serieNameHtml}${notesHtml}
-        </div>
-        <div class="rm-actions">
-          <button class="menu-btn" onclick="event.stopPropagation();openFilmCatalogMenu('${f.id}')">···</button>
         </div>
       </div>`;
     };
@@ -3348,7 +3398,7 @@ function renderFilms(){
       const typeLabel=isAnime?'anime':'film';
       html+=`<div class="film-saga-block">
         <div class="film-saga-header">
-          ${escHtml(sagaTitle)}
+          ${isAnime?'📺':'🎬'} ${escHtml(sagaTitle)}
           <span class="saga-type-badge ${typeLabel}">${typeLabel}</span>
         </div>`;
       films.forEach((f,i)=>{ html+=buildFilmItem(f,idx++,showOrderBadge,true); });
