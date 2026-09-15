@@ -342,6 +342,24 @@ header .logo { display: none; }
 }
 .stat-pill-preferiti.fav-active strong { color: #ffdd00; }
 
+.stat-pill-type { cursor: pointer; }
+.stat-pill-type:hover { border-color: var(--accent); }
+.stat-pill-type.stat-pill-type-disabled { cursor: default; pointer-events: none; }
+.stat-pill-type.type-pill-active.dub-active {
+  background: rgba(255,94,122,0.14);
+  border-color: var(--dub-color);
+  color: var(--dub-color);
+  box-shadow: 0 0 14px rgba(255,94,122,0.35);
+}
+.stat-pill-type.type-pill-active.dub-active strong { color: var(--dub-color); }
+.stat-pill-type.type-pill-active.sub-active {
+  background: rgba(74,199,255,0.14);
+  border-color: var(--sub-color);
+  color: var(--sub-color);
+  box-shadow: 0 0 14px rgba(74,199,255,0.35);
+}
+.stat-pill-type.type-pill-active.sub-active strong { color: var(--sub-color); }
+
 .logo {
   font-family: 'sans-serif', sans-serif;
   font-size: 1.1rem;
@@ -813,6 +831,98 @@ main {
 /* ===== ROADMAP & COMPLETED ITEMS ===== */
 .roadmap, .completed-grid { display: flex; flex-direction: column; gap: 8px; max-width: 900px; margin: 0 auto; }
 
+/* Layout Programma: il pannello "da ricordare" è agganciato a destra in posizione
+   fixed, fuori dal flusso della griglia — così comparire/sparire non sposta mai
+   la roadmap centrale né le sue card. */
+.programma-layout { position: relative; }
+.roadmap-alert-col { display: none; }
+@media (min-width: 1300px) {
+  .roadmap-alert-col.visible {
+    display: block;
+    position: fixed;
+    top: 88px;
+    right: 22px;
+    width: 234px;
+    max-height: calc(100vh - 112px);
+    overflow-y: auto;
+    z-index: 60;
+  }
+}
+.programma-main { min-width: 0; }
+
+.rm-alert-panel {
+  background: var(--surface);
+  border: 1px solid rgba(255,170,51,0.3);
+  border-radius: 16px;
+  padding: 12px 13px;
+  box-shadow: var(--shadow-sm);
+}
+.rm-alert-panel-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.62rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+.rm-alert-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 9px 10px 9px 13px;
+  background: var(--surface2);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.rm-alert-card + .rm-alert-card { margin-top: 8px; }
+.rm-alert-card:hover { border-color: var(--accent); background: var(--card-hover); transform: translateX(2px); }
+/* Stato "collegato": quando la voce corrispondente in roadmap è in hover, o viceversa */
+.rm-alert-card.linked-highlight {
+  border-color: var(--amber);
+  background: var(--card-hover);
+  transform: translateX(2px);
+  box-shadow: 0 0 0 1px rgba(255,170,51,0.45), 0 0 16px rgba(255,170,51,0.25);
+}
+.rm-alert-card-title {
+  font-size: 0.74rem; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 5px;
+}
+.rm-alert-card-title .badge { font-size: 0.52rem; padding: 2px 6px; flex-shrink: 0; }
+.rm-alert-note {
+  font-size: 0.66rem; color: var(--muted2);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.rm-alert-films {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.rm-alert-film {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.64rem; color: var(--muted2);
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rm-alert-film::before { content: '🎬'; font-size: 0.6rem; flex-shrink: 0; }
+.rm-alert-films-more { font-size: 0.6rem; color: var(--muted); font-style: italic; }
+
+/* Indicatore persistente sulla voce roadmap collegata al pannello "da ricordare",
+   più evidenziazione forte quando è collegata in hover (dall'una o dall'altra parte) */
+.rm-item.has-alert-link { box-shadow: inset 3px 0 0 var(--amber); }
+.rm-item.linked-highlight {
+  border-color: var(--amber);
+  box-shadow: inset 3px 0 0 var(--amber), 0 0 0 2px rgba(255,170,51,0.4), 0 0 18px rgba(255,170,51,0.3);
+}
+.rm-alert-linked-badge {
+  font-size: 0.6rem;
+  margin-left: 3px;
+  filter: drop-shadow(0 0 4px rgba(255,170,51,0.65));
+}
+
+
 .rm-item, .completed-item {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -844,13 +954,6 @@ main {
   box-shadow: 0 0 0 1px rgba(232,25,90,0.1), 0 4px 18px rgba(232,25,90,0.08);
 }
 .rm-item.watching::before { background: var(--accent); }
-
-.rm-item.paused {
-  background: rgba(255,255,255,0.035);
-  border-color: rgba(255,255,255,0.16);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 18px rgba(255,255,255,0.04);
-}
-.rm-item.paused::before { background: var(--text); }
 
 .rm-num, .c-num {
   font-family: 'DM Mono', monospace;
@@ -914,14 +1017,6 @@ main {
   0%,100% { box-shadow: 0 0 0px var(--accentGlow); }
   50%      { box-shadow: 0 0 8px var(--accentGlow); }
 }
-.paused-tag {
-  font-size: 0.57rem; font-weight: 700;
-  color: var(--text);
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
-  padding: 3px 9px; border-radius: 30px;
-  letter-spacing: 0.07em; text-transform: uppercase;
-}
 .type-toggle-badge { cursor: pointer; transition: filter 0.15s, transform 0.15s; user-select: none; }
 .type-toggle-badge:hover { filter: brightness(1.25); transform: translateY(-1px); }
 .type-toggle-icon { opacity: 0.55; margin-left: 4px; font-size: 0.85em; }
@@ -938,7 +1033,6 @@ main {
 .rm-detail-action .rda-icon { font-size: 0.95em; width: 1.2em; text-align: center; flex-shrink: 0; }
 .rm-detail-action:hover { border-color: var(--border2); background: var(--card-hover); transform: translateX(2px); }
 .rm-detail-action.active { border-color: var(--accent); background: var(--accentGlow2); color: var(--accent2); box-shadow: 0 0 0 1px var(--accentGlow); }
-.rm-detail-action.paused-active { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); color: var(--text); }
 .rm-detail-action.danger { color: var(--red); }
 .rm-detail-action.danger:hover { border-color: var(--red); background: rgba(255,59,74,0.08); }
 .ongoing-tag {
@@ -974,6 +1068,235 @@ main {
   opacity: 0.8;
 }
 .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* ===== VISTA SCHEDE — SERIE ===== */
+.catalog-view-toggle { display: flex; gap: 6px; }
+.view-toggle-btn, .filter-toggle-btn {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  height: 42px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 30px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: all 0.2s cubic-bezier(0.34,1.4,0.64,1);
+  user-select: none;
+  white-space: nowrap;
+}
+.view-toggle-btn:hover, .filter-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent2);
+  background: var(--card-hover);
+}
+.view-toggle-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 12px var(--accentGlow);
+}
+.filter-toggle-btn.active { border-color: var(--accent); color: var(--accent2); background: var(--card-hover); }
+
+/* Toggle ricerca: nasconde solo la casella di ricerca. Filtro episodi e
+   ordinamento restano sempre visibili nella riga. */
+#catalogSearchRow.filters-hidden .search-input,
+#catalogSearchRow.filters-hidden .ep-filter-row {
+  display: none;
+}
+
+/* In modalità schede la pagina scorre normalmente invece di essere contenuta in un riquadro a scroll fisso */
+#catalog-serie-subtab.cards-mode { height: auto; }
+#catalog-serie-subtab.cards-mode .catalog-grid-scroll { display: none !important; }
+
+.series-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  gap: 16px;
+  padding: 4px 2px 18px;
+}
+@media (max-width: 700px) {
+  .series-cards-grid { grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); }
+}
+/* Variante per le griglie di una singola saga/collezione: con poche card, auto-fill + 1fr
+   lascia colonne vuote a destra invece di stringere il gruppo; qui invece le colonne hanno
+   larghezza fissa e il gruppo intero viene centrato nel contenitore. */
+.saga-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 172px);
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 2px 18px;
+}
+@media (max-width: 700px) {
+  .saga-cards-grid { grid-template-columns: repeat(auto-fit, 138px); }
+}
+.series-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: default;
+  transition: transform 0.22s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.22s;
+}
+.series-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.35), 0 0 0 1px var(--border2);
+  z-index: 2;
+}
+.series-card.is-ongoing {
+  animation: cardOngoingAura 1.8s ease-in-out infinite;
+  will-change: box-shadow;
+}
+@keyframes cardOngoingAura {
+  /* Ridotto il blur (era 26px) e rimossa l'animazione di border-color: un box-shadow
+     con blur ampio ridisegnato ad ogni frame su molte card contemporaneamente è
+     una delle animazioni CSS più costose per il browser e causava il lag nel catalogo. */
+  0%,100% { box-shadow: 0 0 0 1px rgba(46,232,165,0.35), 0 0 6px 1px rgba(46,232,165,0.25); }
+  50%      { box-shadow: 0 0 0 2px #2ee8a5, 0 0 10px 2px rgba(46,232,165,0.55); }
+}
+.series-card-poster-wrap {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 138%; /* poster più alto */
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--surface2), var(--surface3));
+  overflow: hidden;
+}
+.series-card-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.series-card-noimg {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; color: var(--muted); opacity: 0.5;
+}
+.series-card-poster-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 3;
+}
+.series-card-poster-wrap:hover .series-card-poster-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+.series-card-overlay-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.1);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 1.05rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34,1.4,0.64,1), background 0.18s, border-color 0.18s;
+}
+.series-card-overlay-btn:hover {
+  transform: scale(1.14);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.series-card-corner {
+  position: absolute; top: 8px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  text-transform: uppercase;
+  /* sopra l'overlay scuro (z-index 3) così i tag restano leggibili anche in hover */
+  z-index: 4;
+  color: #fff;
+  cursor: default;
+}
+.series-card-corner.tag-ongoing { left: 8px; background: rgba(46,232,165,0.35); border: 1px solid rgba(46,232,165,0.5); }
+.series-card-corner.tag-film { right: 8px; background: rgba(45,158,255,0.35); border: 1px solid rgba(45,158,255,0.5); cursor: help; }
+.series-card-corner.tag-order { right: 8px; background: rgba(255,255,255,0.16); border: 1px solid var(--border2); }
+.series-card-corner.tag-type { left: 8px; }
+.series-card-corner.tag-type.dub { background: rgba(255,94,122,0.4); border: 1px solid rgba(255,94,122,0.55); }
+.series-card-corner.tag-type.sub { background: rgba(74,199,255,0.4); border: 1px solid rgba(74,199,255,0.55); }
+.series-card-corner.tag-note {
+  top: auto; bottom: 8px; right: 8px;
+  background: rgba(255,204,51,0.35); border: 1px solid rgba(255,204,51,0.5);
+  font-size: 0.72rem; padding: 3px 7px; cursor: help;
+}
+.series-card-bottom {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 9px 11px 10px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.series-card-title {
+  font-size: 0.82rem;
+  font-weight: 575;
+  line-height: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.series-card-tagrow { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; flex-wrap: wrap; }
+.series-card-type-badge {
+  font-size: 0.56rem; font-weight: 800;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 20px;
+}
+.series-card-type-badge.dub { background: var(--dub-bg); color: var(--dub-color); border: 1px solid var(--dub-border); }
+.series-card-type-badge.sub { background: var(--sub-bg); color: var(--sub-color); border: 1px solid var(--sub-border); }
+.series-card-note-badge {
+  font-size: 0.68rem; line-height: 1; cursor: help;
+  color: var(--amber); opacity: 0.9;
+}
+.series-card-note-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.55rem; font-weight: 800;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 8px;
+  color: #fff;
+  background: rgba(255,204,51,0.35);
+  border: 1px solid rgba(255,204,51,0.5);
+  cursor: help;
+  flex-shrink: 0;
+}
+.series-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex: 0 0 auto; }
+.series-card-eps {
+  color: var(--muted); font-size: 0.66rem;
+  font-family: 'DM Mono', monospace;
+  background: var(--surface3);
+  padding: 3px 9px; border-radius: 20px;
+}
+.series-card-fav {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 0.95rem;
+  transition: all 0.18s cubic-bezier(0.34,1.4,0.64,1);
+  line-height: 1; padding: 0;
+}
+.series-card-fav.active { color: #ffcc33; text-shadow: 0 0 8px rgba(255,204,51,0.6); }
+.series-card-fav:hover { transform: scale(1.2); }
 
 /* Checkbox styled */
 .check-row {
@@ -1059,6 +1382,47 @@ main {
 .modal-check-lbl { font-size: 0.78rem; font-weight: 700; color: var(--muted2); }
 .modal-check-row.checked .modal-check-lbl { color: var(--green); }
 
+/* Checkbox "DUB" per il modulo film (stesso stile del check "In corso"): selezionato = DUB, non selezionato = SUB */
+.modal-check-row.dub-check.checked .modal-check-box {
+  background: var(--dub-color);
+  border-color: var(--dub-color);
+  box-shadow: 0 0 8px var(--dub-bg);
+}
+.modal-check-row.dub-check.checked .modal-check-lbl { color: var(--dub-color); }
+
+/* Toggle "sfondo nero puro" nelle impostazioni */
+.settings-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 0.76rem; font-weight: 700; color: var(--muted2);
+}
+.settings-switch {
+  position: relative;
+  width: 38px; height: 22px;
+  border-radius: 999px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.settings-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--muted2);
+  transition: transform 0.2s cubic-bezier(0.34,1.4,0.64,1), background 0.2s;
+}
+.settings-switch.on { background: var(--accentGlow2); border-color: var(--accent); }
+.settings-switch.on::after { transform: translateX(16px); background: var(--accent); }
+
+/* Quando attivo, sfondo pagina totalmente nero e niente bagliori ambientali */
+body.pure-black-bg { --bg: #000000; }
+body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
+
 .check-mark {
   background: rgba(0,229,160,0.12);
   border: 1px solid rgba(0,229,160,0.28);
@@ -1081,17 +1445,28 @@ main {
   padding: 3px 5px; border-radius: 7px;
 }
 .drag-handle:active { cursor: grabbing; }
+.rm-poster {
+  width: 40px; height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--surface2), var(--surface3));
+  display: flex; align-items: center; justify-content: center;
+}
+.rm-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rm-poster-noimg { font-size: 0.9rem; color: var(--muted); opacity: 0.5; }
 .rm-item:hover .drag-handle,
 .completed-item:hover .drag-handle { opacity: 0.8; background: var(--surface3); }
 
 /* ===== SEARCH ROW ===== */
-.search-row { display: flex; gap: 10px; margin-bottom: 0.6rem; flex-wrap: wrap; justify-content: center; max-width: 960px; margin-left: auto; margin-right: auto; }
+.search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; justify-content: center; max-width: 960px; margin-left: auto; margin-right: auto; }
 .search-row.search-row-compact .search-input { flex: 0 1 340px; }
 .search-input {
   flex: 1;
+  height: 42px;
   background: var(--surface);
   border: 1px solid var(--border);
-  padding: 13px 22px;
+  padding: 0 22px;
   border-radius: 36px;
   font-size: 0.95rem;
   color: var(--text);
@@ -1104,9 +1479,10 @@ main {
   box-shadow: 0 0 0 3px var(--accentGlow);
 }
 .sort-select {
+  height: 42px;
   background: var(--surface);
   border: 1px solid var(--border);
-  padding: 12px 18px;
+  padding: 0 18px;
   border-radius: 36px;
   font-family: 'DM Mono', monospace;
   font-size: 0.74rem; color: var(--text);
@@ -1358,6 +1734,37 @@ main {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .edit-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accentGlow); }
+.imdb-search-wrap { position: relative; }
+.imdb-search-results {
+  position: absolute; left: 0; right: 0; top: calc(100% - 4px);
+  background: var(--surface3); border: 1px solid var(--border2); border-radius: 12px;
+  max-height: 260px; overflow-y: auto; z-index: 30;
+  box-shadow: var(--shadow-sm);
+  display: none;
+}
+.imdb-search-results.open { display: block; }
+.imdb-search-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.imdb-search-item:last-child { border-bottom: none; }
+.imdb-search-item:hover { background: var(--card-hover); }
+.imdb-search-item img {
+  width: 30px; height: 44px; object-fit: cover; border-radius: 4px;
+  background: var(--surface2); flex-shrink: 0;
+}
+.imdb-search-item .isi-ph {
+  width: 30px; height: 44px; border-radius: 4px; background: var(--surface2); flex-shrink: 0;
+}
+.imdb-search-item .isi-info { min-width: 0; flex: 1; }
+.imdb-search-item .isi-title {
+  font-size: 0.79rem; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.imdb-search-item .isi-meta { font-size: 0.63rem; color: var(--muted); margin-top: 1px; }
+.imdb-search-status { padding: 10px; font-size: 0.7rem; color: var(--muted); text-align: center; }
 .edit-label {
   font-size: 0.6rem; color: var(--muted); text-transform: uppercase;
   letter-spacing: 0.1em; font-weight: 700; margin-bottom: 4px; display: block;
@@ -1401,11 +1808,11 @@ main {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 7px 28px 7px 13px;
+  padding: 0 28px 0 13px;
   border-radius: 24px;
   font-size: 0.95rem;
   width: 80px;
-  height: 43.5px;
+  height: 42px;
   outline: none;
   font-family: 'DM Mono', monospace;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -1448,31 +1855,65 @@ main {
 }
 
 /* ===== FILM SECTION ===== */
-.film-franchise-block {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  margin-bottom: 14px;
+/* Collezione Serie: le card di TUTTE le saghe scorrono in un unico flusso
+   da sinistra verso destra (niente più box separati per collezione, che
+   creavano righe irregolari). Ogni saga è preceduta da una "tile" informativa
+   grande quanto una card, che quindi si inserisce nel flusso invece di
+   spezzare la riga: mantiene titolo, N° roadmap, N° film e N° visti. */
+.film-flow-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 14px;
+  padding: 4px 2px 18px;
+}
+.film-flow-tag {
+  width: 172px;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  background: linear-gradient(160deg, var(--surface3), var(--surface2));
+  border: 1px solid var(--border2);
+  padding: 13px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  cursor: default;
+  transition: transform 0.22s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.22s;
 }
-.film-franchise-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 18px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  user-select: none;
+.film-flow-tag::before {
+  content: '';
+  position: absolute; top: -40%; right: -30%;
+  width: 75%; height: 75%;
+  background: radial-gradient(circle, var(--accentGlow), transparent 70%);
+  opacity: 0.55;
+  pointer-events: none;
 }
-.film-franchise-header:hover { background: var(--surface3); }
-.film-franchise-icon {
-  font-size: 0.95rem;
-  color: var(--accent2);
+.film-flow-tag:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.35), 0 0 0 1px var(--border2);
+  z-index: 2;
 }
-.film-franchise-name {
-  flex: 1;
-  font-weight: 800; font-size: 0.9rem;
+.film-flow-tag-top {
+  display: flex; flex-direction: column; gap: 6px;
+  position: relative; z-index: 1;
+}
+.film-flow-tag-icon { font-size: 1.15rem; color: var(--accent2); }
+.film-flow-tag-title {
+  font-weight: 800; font-size: 0.8rem; line-height: 1.28;
   letter-spacing: -0.01em;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.film-flow-tag-meta {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+  position: relative; z-index: 1;
+}
+.film-flow-tag-meta > * { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) {
+  .film-flow-tag { width: 138px; padding: 10px; }
 }
 .film-franchise-count {
   background: var(--surface3);
@@ -1484,25 +1925,37 @@ main {
   font-family: 'DM Mono', monospace;
   color: var(--muted2);
 }
-.film-franchise-actions { display: flex; gap: 5px; }
-.film-franchise-collapse-icon {
-  color: var(--muted); font-size: 0.7rem;
-  transition: transform 0.2s;
-}
-.film-franchise-block.collapsed .film-franchise-collapse-icon { transform: rotate(-90deg); }
-.film-franchise-list { display: block; }
-.film-franchise-block.collapsed .film-franchise-list { display: none; }
 
 .film-group { margin-bottom: 6px; }
-.film-group .section-label { margin: 0.2rem 0 0.6rem; }
+.film-group .section-label { margin: 0.2rem 0 0.6rem; font-weight: 800; color: var(--text); font-size: 0.7rem; }
+
+/* Section label per singola collezione/saga di film (dentro Collezione Film / Collezione Serie),
+   uguale allo stile dei section-label ma con riga sfumata più corta */
+.film-saga-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 4px;
+  display: flex; align-items: center; gap: 8px;
+  margin: 1rem 0 0.5rem;
+}
+.film-saga-label::after {
+  content: '';
+  width: 70px; height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
+}
+.film-saga-label .film-franchise-seen-tag,
+.film-saga-label .film-franchise-roadmap-tag,
+.film-saga-label .film-franchise-completed-tag,
+.film-saga-label .film-franchise-count {
+  text-transform: none;
+  letter-spacing: normal;
+}
 
 .film-standalone-block {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
   margin-bottom: 14px;
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
 }
 .film-standalone-header {
   padding: 11px 18px 5px;
@@ -1678,6 +2131,50 @@ main {
   display: flex; gap: 7px; flex-shrink: 0; align-items: center;
 }
 .sd-footer .btn { padding: 9px 12px; font-size: 0.76rem; }
+
+/* ===== ANIME FRANCHISE FILMS MODAL =====
+   Popup che mostra, per una saga di film legata ad un anime, tutte le card dei
+   singoli film (stesse card "classiche" già usate altrove, con tutte le loro
+   azioni). Si apre cliccando sulla card riepilogativa della saga. */
+.franchise-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 645;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.franchise-modal-overlay.open { display: flex; animation: fadeIn 0.18s ease; }
+.franchise-modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 920px;
+  max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 28px 70px rgba(0,0,0,0.55), 0 0 0 1px var(--border), 0 0 40px var(--accentGlow);
+  animation: modalSlide 0.22s cubic-bezier(0.34,1.4,0.64,1);
+}
+.franchise-modal-header {
+  padding: 1.2rem 1.4rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+.franchise-modal-tags { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; flex-wrap: wrap; }
+.franchise-modal-title { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); line-height: 1.3; padding-right: 2rem; }
+.franchise-modal-body {
+  padding: 1rem 1.4rem 1.4rem;
+  overflow-y: auto;
+  flex: 1;
+}
+@media (max-width:700px) { .franchise-modal-box { max-height: 92vh; } }
 
 /* ===== NOTES TOOLTIP IN ROADMAP ===== */
 .rm-notes-wrap {
@@ -1896,6 +2393,10 @@ main {
         <span>↑</span><span>Importa JSON</span>
       </button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+      <div class="settings-toggle-row">
+        <span>Sfondo pagina nero puro</span>
+        <div class="settings-switch on" id="pureBlackToggle" onclick="togglePureBlackBg()"></div>
+      </div>
     </div>
   </div>
 </nav>
@@ -1933,23 +2434,28 @@ main {
   <!-- ===== SERIE SUBTAB ===== -->
   <div id="catalog-serie-subtab">
     <div class="serie-sticky-head">
-      <div class="search-row search-row-compact" style="margin-bottom:0.6rem">
-        <input class="search-input" type="text" placeholder="Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalog()">
+      <div class="search-row search-row-compact filters-hidden" id="catalogSearchRow" style="margin-bottom:0.6rem">
+        <div class="catalog-view-toggle" id="catalogViewToggle">
+          <button class="view-toggle-btn" id="catalogViewListBtn" onclick="toggleCatalogListMode()" title="Vista lista">☰ Liste</button>
+        </div>
+        <button class="filter-toggle-btn active" id="catalogFilterToggleBtn" onclick="toggleCatalogFilters()" title="Mostra/nascondi ricerca">🔍 Ricerca</button>
+        <input class="search-input" type="text" placeholder="Cerca nel catalogo…" id="catalogSearch" oninput="renderCatalogDebounced()">
         <div class="ep-filter-row">
           <div class="ep-filter-wrap">
-            <input class="ep-filter-input" type="number" id="epFilterInput" min="1" placeholder="EP" oninput="toggleEpClear(this,'epFilterClear');renderCatalog()">
+            <input class="ep-filter-input" type="number" id="epFilterInput" min="1" placeholder="EP" oninput="toggleEpClear(this,'epFilterClear');renderCatalogDebounced()">
             <button class="ep-filter-clear" id="epFilterClear" onclick="clearEpFilter()">✕</button>
           </div>
         </div>
         <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
           <option value="eps">ep ↑</option>
           <option value="title">A–Z</option>
+          <option value="za">Z–A</option>
           <option value="recent">Recenti</option>
         </select>
       </div>
       <div class="stats-bar" id="catalogStats" style="margin-bottom:0.8rem;"><span class="ep-filter-badge" id="epFilterBadge"></span></div>
     </div>
-    <div class="catalog-grid catalog-grid-scroll">
+    <div class="catalog-grid catalog-grid-scroll" id="catalog-grid-list-view">
       <div class="column col-dub">
         <div class="column-header">
           <div class="column-title"><span class="badge dub">DUB</span><h3>Doppiato</h3></div>
@@ -1964,6 +2470,9 @@ main {
         </div>
         <div class="list" id="sub-list"></div>
       </div>
+    </div>
+    <div class="series-cards-grid" id="catalog-cards-grid" style="display:none">
+      <div id="catalog-cards-list" style="display:contents"></div>
     </div>
   </div>
 
@@ -2001,24 +2510,29 @@ main {
 
 <!-- ===== PROGRAMMA ===== -->
 <div class="section" id="programma">
-  <div class="section-inline-bar">
-    <div class="stats-bar" style="margin-bottom:0.6rem;">
-      <button class="btn btn-ghost btn-sm" onclick="addRandom()">Random</button>
-      <button class="btn btn-sm" onclick="addRandom('DUB')">+ DUB</button>
-      <button class="btn btn-sm" onclick="addRandom('SUB')">+ SUB</button>
-    </div>
-    <div class="stats-bar" style="margin-bottom:0.6rem;">
-      <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
-      <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
-      <div class="stat-pill"><span class="dot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2)"></span> Watching: <strong id="watching-count">0</strong></div>
-    </div>
-    <div class="stats-bar" style="margin-bottom:0.6rem; justify-content:flex-end;" id="roadmapReorderBar">
-      <button class="btn btn-ghost btn-sm" onclick="toggleRoadmapReorderMode()">⇅ Riordina</button>
+  <div class="programma-layout" id="programmaLayout">
+    <aside class="roadmap-alert-col" id="roadmapAlertCol"></aside>
+    <div class="programma-main">
+      <div class="section-inline-bar">
+        <div class="stats-bar" style="margin-bottom:0.6rem;">
+          <button class="btn btn-ghost btn-sm" onclick="addRandom()">Random</button>
+          <button class="btn btn-sm" onclick="addRandom('DUB')">+ DUB</button>
+          <button class="btn btn-sm" onclick="addRandom('SUB')">+ SUB</button>
+        </div>
+        <div class="stats-bar" style="margin-bottom:0.6rem;">
+          <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
+          <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
+          <div class="stat-pill"><span class="dot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2)"></span> Watching: <strong id="watching-count">0</strong></div>
+        </div>
+        <div class="stats-bar" style="margin-bottom:0.6rem; justify-content:flex-end;" id="roadmapReorderBar">
+          <button class="btn btn-ghost btn-sm" onclick="toggleRoadmapReorderMode()">⇅ Riordina</button>
+        </div>
+      </div>
+      <div class="roadmap" id="roadmap"></div>
+      <div class="section-label" id="dropped-label" style="display:none; margin: 0.8rem 0 0.3rem;">Droppate</div>
+      <div class="roadmap" id="dropped"></div>
     </div>
   </div>
-  <div class="roadmap" id="roadmap"></div>
-  <div class="section-label" id="dropped-label" style="display:none; margin: 0.8rem 0 0.3rem;">Droppate</div>
-  <div class="roadmap" id="dropped"></div>
 </div>
 
 <!-- ===== COMPLETATE ===== -->
@@ -2091,12 +2605,29 @@ main {
   </div>
 </div>
 
+<!-- ===== ANIME FRANCHISE FILMS MODAL ===== -->
+<div class="franchise-modal-overlay" id="franchiseFilmsOverlay" onclick="handleFranchiseFilmsOverlayClick(event)">
+  <div class="franchise-modal-box">
+    <div class="franchise-modal-header">
+      <div class="franchise-modal-tags" id="ffTags"></div>
+      <div class="franchise-modal-title" id="ffTitle"></div>
+      <button class="sd-close" onclick="closeAnimeFranchiseModal()">✕</button>
+    </div>
+    <div class="franchise-modal-body">
+      <div class="saga-cards-grid" id="ffGrid"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ADD SERIES MODAL ===== -->
 <div class="edit-modal-overlay" id="addSeriesModal" onclick="handleAddSeriesOverlayClick(event)">
   <div class="edit-modal-box">
     <div class="edit-modal-title">Nuova serie</div>
     <span class="edit-label">Titolo</span>
-    <input class="edit-field" id="title" placeholder="Nome serie" autocomplete="off">
+    <div class="imdb-search-wrap">
+      <input class="edit-field" id="title" placeholder="Nome serie" autocomplete="off" oninput="handleImdbTitleInput(this,'imdbSearchResults','imdbId')">
+      <div class="imdb-search-results" id="imdbSearchResults"></div>
+    </div>
     <div style="display:flex;gap:8px;">
       <div style="flex:1">
         <span class="edit-label">Episodi</span>
@@ -2114,6 +2645,8 @@ main {
         </select>
       </div>
     </div>
+    <span class="edit-label" style="margin-top:6px;display:block;">Codice IMDB (per poster, vista schede) — compilato automaticamente scrivendo il titolo sopra</span>
+    <input class="edit-field" id="imdbId" placeholder="es. tt36517689" autocomplete="off">
     <span class="edit-label" style="margin-top:6px;display:block;">Note (watchorder, OVA, film…)</span>
     <input class="edit-field" id="notes" placeholder="es. Film → S1 → OVA → S2">
     <div class="modal-check-row" id="ongoingCheckRow" onclick="toggleAddOngoing()">
@@ -2132,14 +2665,18 @@ main {
   <div class="edit-modal-box" style="max-width:460px">
     <div class="edit-modal-title">Aggiungi film</div>
     <span class="edit-label">Titolo film</span>
-    <input class="edit-field" id="filmTitle" placeholder="Titolo del film" autocomplete="off">
+    <div class="imdb-search-wrap">
+      <input class="edit-field" id="filmTitle" placeholder="Titolo del film" autocomplete="off" oninput="handleImdbTitleInput(this,'filmImdbSearchResults','filmImdbId')">
+      <div class="imdb-search-results" id="filmImdbSearchResults"></div>
+    </div>
     <div style="display:flex;gap:8px;">
       <div style="flex:1">
         <span class="edit-label">Tipo</span>
-        <select class="edit-field" id="filmType">
-          <option value="DUB">DUB</option>
-          <option value="SUB">SUB</option>
-        </select>
+        <div class="modal-check-row dub-check" id="filmTypeCheckRow" onclick="toggleFilmTypeSquare()" style="margin-bottom:0;height:38px;">
+          <span class="modal-check-box" id="filmTypeCheckBox">✓</span>
+          <span class="modal-check-lbl">DUB</span>
+        </div>
+        <input type="hidden" id="filmType" value="SUB">
       </div>
       <div style="flex:2">
         <span class="edit-label">Saga (opzionale)</span>
@@ -2154,6 +2691,8 @@ main {
         </select>
       </div>
     </div>
+    <span class="edit-label" style="margin-top:6px;display:block;">Codice IMDB (per poster, vista schede) — compilato automaticamente scrivendo il titolo sopra</span>
+    <input class="edit-field" id="filmImdbId" placeholder="es. tt36517689" autocomplete="off">
     <span class="edit-label" style="margin-top:6px;display:block;">Note</span>
     <input class="edit-field" id="filmNotes" placeholder="es. Prequel, Part 1…">
     <div class="edit-modal-actions">
@@ -2168,14 +2707,18 @@ main {
   <div class="edit-modal-box" style="max-width:460px">
     <div class="edit-modal-title">Modifica film</div>
     <span class="edit-label">Titolo film</span>
-    <input class="edit-field" id="editFilmTitle" placeholder="Titolo del film" autocomplete="off">
+    <div class="imdb-search-wrap">
+      <input class="edit-field" id="editFilmTitle" placeholder="Titolo del film" autocomplete="off" oninput="handleImdbTitleInput(this,'editFilmImdbSearchResults','editFilmImdbId')">
+      <div class="imdb-search-results" id="editFilmImdbSearchResults"></div>
+    </div>
     <div style="display:flex;gap:8px;">
       <div style="flex:1">
         <span class="edit-label">Tipo</span>
-        <select class="edit-field" id="editFilmType">
-          <option value="DUB">DUB</option>
-          <option value="SUB">SUB</option>
-        </select>
+        <div class="modal-check-row dub-check" id="editFilmTypeCheckRow" onclick="toggleEditFilmTypeSquare()" style="margin-bottom:0;height:38px;">
+          <span class="modal-check-box" id="editFilmTypeCheckBox">✓</span>
+          <span class="modal-check-lbl">DUB</span>
+        </div>
+        <input type="hidden" id="editFilmType" value="SUB">
       </div>
       <div style="flex:2">
         <span class="edit-label">Saga (opzionale)</span>
@@ -2190,6 +2733,8 @@ main {
         </select>
       </div>
     </div>
+    <span class="edit-label" style="margin-top:6px;display:block;">Codice IMDB (per poster, vista schede) — compilato automaticamente scrivendo il titolo sopra</span>
+    <input class="edit-field" id="editFilmImdbId" placeholder="es. tt36517689" autocomplete="off">
     <span class="edit-label" style="margin-top:6px;display:block;">Note</span>
     <input class="edit-field" id="editFilmNotes" placeholder="es. Prequel, Part 1…">
     <div class="edit-modal-actions">
@@ -2206,8 +2751,9 @@ main {
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <input class="edit-field" id="newFilmSeriesTitle" placeholder="Nome della saga…" style="margin:0;flex:1" autocomplete="off">
       <input class="edit-field" id="newFilmSeriesCount" type="number" min="2" placeholder="N° film" style="margin:0;width:90px">
-      <button class="edit-save-btn" style="flex-shrink:0;padding:10px 14px" onclick="addFilmSeries()">+</button>
+      <button class="edit-save-btn" id="filmSeriesSaveBtn" style="flex-shrink:0;padding:10px 14px" onclick="saveFilmSeries()">+</button>
     </div>
+    <div id="filmSeriesEditHint" style="display:none;font-size:0.68rem;color:var(--muted);margin:-4px 0 10px;">Modifica in corso — <a href="#" onclick="event.preventDefault();cancelEditFilmSeries()" style="color:var(--accent, #6cf);">annulla</a></div>
     <div id="filmSeriesList" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
     <div class="edit-modal-actions" style="margin-top:12px">
       <button class="edit-cancel-btn" onclick="closeFilmSeriesModal()">Chiudi</button>
@@ -2220,7 +2766,10 @@ main {
   <div class="edit-modal-box" id="editSeriesBox">
     <div class="edit-modal-title">Modifica voce</div>
     <span class="edit-label">Titolo</span>
-    <input class="edit-field" id="editModalTitle" placeholder="Titolo serie">
+    <div class="imdb-search-wrap">
+      <input class="edit-field" id="editModalTitle" placeholder="Titolo serie" oninput="handleImdbTitleInput(this,'editModalImdbSearchResults','editModalImdbId')">
+      <div class="imdb-search-results" id="editModalImdbSearchResults"></div>
+    </div>
     <div style="display:flex;gap:8px;">
       <div style="flex:1">
         <span class="edit-label">Episodi</span>
@@ -2238,6 +2787,8 @@ main {
         </select>
       </div>
     </div>
+    <span class="edit-label">Codice IMDB (per poster, vista schede) — compilato automaticamente scrivendo il titolo sopra</span>
+    <input class="edit-field" id="editModalImdbId" placeholder="es. tt36517689" autocomplete="off">
     <span class="edit-label">Note (watchorder, OVA, film…)</span>
     <textarea class="edit-textarea" id="editModalNotes" placeholder="es. Film → S1 → OVA → S2" rows="2"></textarea>
     <div class="modal-check-row" id="editOngoingRow" onclick="toggleEditOngoing()">
@@ -2272,6 +2823,14 @@ main {
 <script>
 const PATTERN = ["DUB","DUB","SUB"];
 const FIREBASE_URL = 'https://serietracker-58894-default-rtdb.europe-west1.firebasedatabase.app/data.json';
+// Endpoint "leggero": legge SOLO il campo _updatedAt (poche decine di byte) invece
+// di scaricare l'intero JSON. Usato per capire se il remoto è cambiato prima di
+// fare un fetch completo — riduce drasticamente il consumo dati dei controlli periodici.
+const FIREBASE_TS_URL = FIREBASE_URL.replace(/\.json$/, '/_updatedAt.json');
+// Chiavi di primo livello del db: usate per capire quali sezioni sono cambiate
+// e inviare a Firebase (via PATCH) solo quelle, invece di riscrivere ogni volta
+// l'intero database (che include tutte le serie, i film, ecc.).
+const DB_TOP_KEYS = ['series','roadmap','dropped','completed','filmSeries','films','filmsCompleted','patternIndex'];
 
 // ---- PERF: cascata animazione con tetto massimo (le voci più in basso non aspettano più all'infinito) ----
 function staggerDelay(i, step, cap){
@@ -2326,6 +2885,25 @@ function loadTheme(){
   else setTheme('dark');
 }
 
+// ---- SFONDO NERO PURO (toggle impostazioni, default attivo) ----
+function applyPureBlackBg(active){
+  document.body.classList.toggle('pure-black-bg', active);
+  const el = document.getElementById('pureBlackToggle');
+  if(el) el.classList.toggle('on', active);
+}
+function togglePureBlackBg(){
+  const current = localStorage.getItem('st_pureBlackBg');
+  const isOn = current===null ? true : current==='1';
+  const next = !isOn;
+  localStorage.setItem('st_pureBlackBg', next ? '1':'0');
+  applyPureBlackBg(next);
+}
+function loadPureBlackBg(){
+  const current = localStorage.getItem('st_pureBlackBg');
+  const isOn = current===null ? true : current==='1'; // di default attivo
+  applyPureBlackBg(isOn);
+}
+
 // ---- LOCAL STORAGE & SYNC ----
 function loadLocal(){
   try{
@@ -2343,24 +2921,70 @@ function loadLocal(){
   }catch(e){ db={...db,...SEED_DATA}; saveLocal(); }
 }
 function saveLocal(){ localStorage.setItem('st_db',JSON.stringify(db)); }
+
+// ---- SYNC FIREBASE — versione ottimizzata per il consumo dati ----
+// Prima ottimizzazione (upload): invece di riscrivere sempre l'intero database
+// con PUT, teniamo uno "snapshot" (serializzato) dell'ultimo stato confermato
+// sincronizzato con Firebase. Ad ogni push confrontiamo il db attuale con quello
+// snapshot sezione per sezione (series/roadmap/dropped/completed/...) e inviamo
+// via PATCH solo le sezioni realmente cambiate: se modifichi solo la roadmap,
+// non viene più ricaricata anche la lista di 150+ serie.
+let _lastSyncedSnapshot = null;
+function _snapshotOf(source){
+  const snap = {};
+  DB_TOP_KEYS.forEach(k=>{ snap[k] = JSON.stringify((source && source[k]!==undefined) ? source[k] : (k==='patternIndex'?0:[])); });
+  return snap;
+}
+function _computeDirtyKeys(){
+  if(!_lastSyncedSnapshot) return DB_TOP_KEYS.slice(); // niente snapshot noto: invia tutto (fallback sicuro)
+  return DB_TOP_KEYS.filter(k=> JSON.stringify(db[k]) !== _lastSyncedSnapshot[k]);
+}
+
 async function _push(){
   setSyncState('syncing');
   try{
+    const dirtyKeys = _computeDirtyKeys();
+    if(dirtyKeys.length===0){
+      // Nessuna sezione realmente cambiata: evitiamo del tutto la richiesta di rete.
+      lastPushedAt=Date.now(); setSyncState('ok'); return true;
+    }
+    const body = { _updatedAt: db._updatedAt };
+    dirtyKeys.forEach(k=>{ body[k]=db[k]; });
     const res=await fetch(FIREBASE_URL,{
-      method:'PUT',
+      method:'PATCH', // PATCH invece di PUT: aggiorna solo le chiavi indicate, non l'intero nodo
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(db)
+      body:JSON.stringify(body)
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
+    if(!_lastSyncedSnapshot) _lastSyncedSnapshot = _snapshotOf(db);
+    else dirtyKeys.forEach(k=>{ _lastSyncedSnapshot[k]=JSON.stringify(db[k]); });
     lastPushedAt=Date.now(); setSyncState('ok'); return true;
   }catch(e){ setSyncState('err',e.message); return false; }
 }
-async function _pull(){
+
+// Seconda ottimizzazione (download): prima di scaricare l'intero JSON, leggiamo
+// solo il campo _updatedAt (richiesta minuscola, pochi byte) e lo confrontiamo
+// con quello locale. Il download completo scatta SOLO se il remoto è davvero
+// più recente — nella maggior parte dei controlli periodici (nessuna modifica
+// da altri dispositivi) non viene più scaricato nulla di pesante.
+async function _pull(force){
   setSyncState('syncing');
   try{
-    const res=await fetch(FIREBASE_URL+'?cb='+Date.now());
+    if(!force){
+      const tsRes = await fetch(FIREBASE_TS_URL, { cache:'no-store' });
+      if(!tsRes.ok) throw new Error('HTTP '+tsRes.status);
+      const remoteTs = await tsRes.json();
+      if(!(remoteTs && remoteTs > (db._updatedAt||0))){
+        setSyncState('ok'); return false; // remoto non più recente: nessun download completo
+      }
+    }
+    const res=await fetch(FIREBASE_URL, { cache:'no-store' });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const remote=await res.json();
+    // Lo snapshot va aggiornato con ciò che è davvero salvato su Firebase in questo
+    // momento, indipendentemente dal fatto che venga poi applicato al db locale:
+    // serve come base per capire cosa dovremo ancora inviare in futuro.
+    _lastSyncedSnapshot = _snapshotOf(remote);
     if(remote&&(remote._updatedAt||0)>(db._updatedAt||0)){
       db=Object.assign({},db,remote);
       saveLocal(); renderAll(); toast('Sincronizzato','success');
@@ -2370,8 +2994,8 @@ async function _pull(){
   }catch(e){ setSyncState('err',e.message); return false; }
 }
 function syncPush(){ syncQueue=syncQueue.then(()=>_push()).catch(()=>setSyncState('err','push failed')); }
-function syncPull(){ syncQueue=syncQueue.then(()=>_pull()).catch(()=>setSyncState('err','pull failed')); }
-async function manualSync(){ syncQueue=syncQueue.then(async()=>{ const p=await _pull(); if(!p) await _push(); }).catch(()=>setSyncState('err','sync failed')); }
+function syncPull(force){ syncQueue=syncQueue.then(()=>_pull(force)).catch(()=>setSyncState('err','pull failed')); }
+async function manualSync(){ syncQueue=syncQueue.then(async()=>{ const p=await _pull(true); if(!p) await _push(); }).catch(()=>setSyncState('err','sync failed')); }
 let _syncIconTimer = null;
 function setSyncState(state, _msg){
   const dot=document.getElementById('syncDot'),btn=document.getElementById('syncBtn'),icon=document.getElementById('syncIcon');
@@ -2391,9 +3015,142 @@ function setSyncState(state, _msg){
     }
   }
 }
-function startSyncPoll(){ if(syncTimer) clearInterval(syncTimer); syncTimer=setInterval(()=>{ if(db._updatedAt>lastPushedAt) syncPush(); else syncPull(); },30000); }
+// Intervallo aumentato da 30s a 60s e, soprattutto, il controllo viene saltato
+// del tutto quando la scheda è in background (non visibile): non ha senso
+// consumare dati per sincronizzare una pagina che l'utente non sta guardando.
+function startSyncPoll(){
+  if(syncTimer) clearInterval(syncTimer);
+  syncTimer=setInterval(()=>{
+    if(document.hidden) return;
+    if(db._updatedAt>lastPushedAt) syncPush(); else syncPull();
+  },60000);
+}
+// Quando la scheda torna in primo piano dopo essere stata nascosta, facciamo
+// un solo controllo leggero (non un fetch completo forzato) per recuperare
+// eventuali modifiche fatte nel frattempo da un altro dispositivo.
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden){
+    if(db._updatedAt>lastPushedAt) syncPush(); else syncPull();
+  }
+});
 function save(){ db._updatedAt=Date.now(); saveLocal(); clearTimeout(window._saveDebounce); window._saveDebounce=setTimeout(syncPush,1200); }
 function toast(msg,type='info'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(window._toastTimer); window._toastTimer=setTimeout(()=>t.classList.remove('show'),2800); }
+
+// ---- RICERCA AUTOMATICA CODICE IMDB (via OMDb API) ----
+// IMDB stesso non permette richieste dirette dal browser (nessun header CORS),
+// e i proxy CORS gratuiti sono inaffidabili/limitati. OMDb API è pensata invece
+// per essere chiamata direttamente dal browser e restituisce l'ID IMDB (imdbID)
+// già pronto nei risultati di ricerca. Serve una chiave gratuita, richiesta una
+// sola volta e salvata nel browser: https://www.omdbapi.com/apikey.aspx
+let _imdbSearchTimer = null;
+let _imdbSearchAbort = null;
+const _imdbSearchCache = new Map(); // query -> risultato, evita richieste di rete ripetute
+const _OMDB_FIXED_API_KEY = 'df0673f0';
+function _getOmdbApiKey(){ return _OMDB_FIXED_API_KEY; }
+function handleImdbTitleInput(inputEl, resultsId, imdbFieldId){
+  const resultsEl = document.getElementById(resultsId);
+  if(!resultsEl) return;
+  clearTimeout(_imdbSearchTimer);
+  const q = inputEl.value.trim();
+  if(q.length < 2){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; return; }
+  if(!_getOmdbApiKey()){ _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId); return; }
+  _imdbSearchTimer = setTimeout(()=>_runImdbSearch(q, resultsEl, imdbFieldId), 350);
+}
+function _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId){
+  resultsEl.classList.add('open');
+  resultsEl.innerHTML = `
+    <div class="imdb-search-status" style="text-align:left;line-height:1.5;">
+      Per cercare automaticamente il codice IMDB serve una chiave gratuita OMDb (email, attivazione immediata).
+      <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener" style="color:var(--accent2);">Ottienila qui</a>, poi incollala sotto:
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input class="edit-field" id="_omdbKeyInput" placeholder="Incolla qui la chiave API" style="margin:0;flex:1;font-size:0.78rem;padding:8px 10px;" autocomplete="off">
+        <button class="edit-save-btn" style="flex-shrink:0;padding:8px 12px;font-size:0.78rem;" onclick="_saveOmdbApiKey('${resultsId}','${imdbFieldId}')">Salva</button>
+      </div>
+    </div>`;
+  setTimeout(()=>{ const i=document.getElementById('_omdbKeyInput'); if(i){ i.focus(); i.addEventListener('keydown', e=>{ if(e.key==='Enter') _saveOmdbApiKey(resultsId, imdbFieldId); }); } }, 30);
+}
+function _saveOmdbApiKey(resultsId, imdbFieldId){
+  const input = document.getElementById('_omdbKeyInput');
+  const key = input ? input.value.trim() : '';
+  if(!key){ toast('Inserisci una chiave valida','error'); return; }
+  localStorage.setItem('st_omdbApiKey', key);
+  toast('Chiave OMDb salvata','success');
+  const resultsEl = document.getElementById(resultsId);
+  const _titleFieldMap = { editModalImdbSearchResults:'editModalTitle', filmImdbSearchResults:'filmTitle', editFilmImdbSearchResults:'editFilmTitle' };
+  const titleFieldId = _titleFieldMap[resultsId] || 'title';
+  const titleEl = document.getElementById(titleFieldId);
+  const q = titleEl ? titleEl.value.trim() : '';
+  if(q.length >= 2 && resultsEl){ _runImdbSearch(q, resultsEl, imdbFieldId); }
+  else if(resultsEl){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; }
+}
+async function _runImdbSearch(q, resultsEl, imdbFieldId){
+  resultsEl.classList.add('open');
+  const cacheKey = q.trim().toLowerCase();
+  if(_imdbSearchCache.has(cacheKey)){
+    _renderImdbResults(_imdbSearchCache.get(cacheKey), resultsEl, imdbFieldId);
+    return;
+  }
+  resultsEl.innerHTML = `<div class="imdb-search-status">Cerco su IMDB…</div>`;
+  try{
+    if(_imdbSearchAbort) _imdbSearchAbort.abort();
+    _imdbSearchAbort = new AbortController();
+    const key = _getOmdbApiKey();
+    const url = `https://www.omdbapi.com/?apikey=${encodeURIComponent(key)}&s=${encodeURIComponent(q.trim())}`;
+    const res = await fetch(url, { signal: _imdbSearchAbort.signal });
+    if(!res.ok) throw new Error('http '+res.status);
+    const data = await res.json();
+    if(data.Response === 'False'){
+      if(/invalid api key/i.test(data.Error||'')){
+        resultsEl.innerHTML = `<div class="imdb-search-status">Chiave OMDb non valida</div>`;
+        toast('Chiave OMDb non valida','error');
+        return;
+      }
+      _imdbSearchCache.set(cacheKey, []);
+      resultsEl.innerHTML = `<div class="imdb-search-status">Nessun risultato su IMDB</div>`;
+      return;
+    }
+    const items = data.Search||[];
+    _imdbSearchCache.set(cacheKey, items);
+    _renderImdbResults(items, resultsEl, imdbFieldId);
+  }catch(err){
+    if(err.name === 'AbortError') return;
+    resultsEl.innerHTML = `<div class="imdb-search-status">Ricerca non disponibile (nessuna connessione). Inserisci il codice manualmente.</div>`;
+  }
+}
+function _renderImdbResults(items, resultsEl, imdbFieldId){
+    if(!items.length){
+      resultsEl.innerHTML = `<div class="imdb-search-status">Nessun risultato su IMDB</div>`;
+      return;
+    }
+    resultsEl.innerHTML = items.slice(0,8).map(it=>{
+      const poster = it.Poster && it.Poster!=='N/A' ? it.Poster : '';
+      const year = it.Year || '';
+      const typeLbl = it.Type==='movie' ? 'Film' : (it.Type==='series' ? 'Serie TV' : (it.Type==='episode' ? 'Episodio' : (it.Type||'')));
+      const safeTitle = (it.Title||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div class="imdb-search-item" data-id="${it.imdbID}">
+        ${poster ? `<img src="${poster}" alt="" loading="lazy">` : `<div class="isi-ph"></div>`}
+        <div class="isi-info">
+          <div class="isi-title">${safeTitle}</div>
+          <div class="isi-meta">${[typeLbl, year, it.imdbID].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    resultsEl.querySelectorAll('.imdb-search-item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const field = document.getElementById(imdbFieldId);
+        if(field) field.value = el.dataset.id;
+        resultsEl.classList.remove('open');
+        resultsEl.innerHTML = '';
+        toast('Codice IMDB trovato: '+el.dataset.id, 'success');
+      });
+    });
+}
+// Chiude i menu a tendina se si clicca fuori
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.imdb-search-results.open').forEach(el=>{
+    if(!el.parentElement.contains(e.target)) el.classList.remove('open');
+  });
+});
 
 // ---- NAVIGATION ----
 function showSection(event,id){
@@ -2469,11 +3226,33 @@ function closeAddSeriesModal(){
   document.getElementById('title').value='';
   document.getElementById('eps').value='';
   document.getElementById('films').value='';
+  document.getElementById('imdbId').value='';
   document.getElementById('notes').value='';
+  const ir=document.getElementById('imdbSearchResults'); if(ir){ ir.classList.remove('open'); ir.innerHTML=''; }
   _resetAddOngoing();
 }
 function handleAddSeriesOverlayClick(e){
   if(e.target===document.getElementById('addSeriesModal')) closeAddSeriesModal();
+}
+
+// ---- CHECKBOX DUB (film) ----
+// Selezionato = DUB, non selezionato = SUB
+function setFilmTypeSquare(rowId, hiddenId, type){
+  const row = document.getElementById(rowId);
+  const hidden = document.getElementById(hiddenId);
+  const isDub = type === 'DUB';
+  if(hidden) hidden.value = isDub ? 'DUB' : 'SUB';
+  if(row) row.classList.toggle('checked', isDub);
+}
+function toggleFilmTypeSquare(){
+  const hidden = document.getElementById('filmType');
+  const newType = hidden && hidden.value==='DUB' ? 'SUB' : 'DUB';
+  setFilmTypeSquare('filmTypeCheckRow','filmType',newType);
+}
+function toggleEditFilmTypeSquare(){
+  const hidden = document.getElementById('editFilmType');
+  const newType = hidden && hidden.value==='DUB' ? 'SUB' : 'DUB';
+  setFilmTypeSquare('editFilmTypeCheckRow','editFilmType',newType);
 }
 
 // ---- ADD FILM MODAL ----
@@ -2481,7 +3260,7 @@ function openAddFilmModal(){
   populateFilmSeriesSelect('filmSeriesSelect','filmOrderGroup','filmOrderSelect');
   // Ripristina ultimo tipo e saga usati
   const lastType = localStorage.getItem('st_lastFilmType');
-  if(lastType){ const sel=document.getElementById('filmType'); if(sel) sel.value=lastType; }
+  setFilmTypeSquare('filmTypeCheckRow','filmType', lastType || 'SUB');
   const lastSeries = localStorage.getItem('st_lastFilmSeriesId');
   if(lastSeries){
     const sel=document.getElementById('filmSeriesSelect');
@@ -2501,6 +3280,8 @@ function closeAddFilmModal(){
   // Reset completo solo alla chiusura
   document.getElementById('filmTitle').value='';
   document.getElementById('filmNotes').value='';
+  document.getElementById('filmImdbId').value='';
+  const ir=document.getElementById('filmImdbSearchResults'); if(ir){ ir.classList.remove('open'); ir.innerHTML=''; }
 }
 function handleAddFilmOverlayClick(e){
   if(e.target===document.getElementById('addFilmModal')) closeAddFilmModal();
@@ -2515,6 +3296,7 @@ document.addEventListener('keydown', function(e){
     if(document.getElementById('editSeriesModal').classList.contains('open')){ closeEditModal(); return; }
     if(document.getElementById('filmSeriesModal').classList.contains('open')){ closeFilmSeriesModal(); return; }
     if(document.getElementById('importModal').classList.contains('open')){ closeImportModal(); return; }
+    if(document.getElementById('franchiseFilmsOverlay').classList.contains('open')){ closeAnimeFranchiseModal(); return; }
     closeSettingsMenu();
   }
   if(e.key === 'n' || e.key === 'N'){
@@ -2541,7 +3323,7 @@ document.addEventListener('keydown', function(e){
     if(document.getElementById('addFilmModal').classList.contains('open') && !isTextarea){ e.preventDefault(); addFilm(); return; }
     if(document.getElementById('editFilmModal').classList.contains('open') && !isTextarea){ e.preventDefault(); saveEditFilm(); return; }
     if(document.getElementById('editSeriesModal').classList.contains('open') && !isTextarea){ e.preventDefault(); saveEditModal(); return; }
-    if(document.getElementById('filmSeriesModal').classList.contains('open') && !isTextarea){ e.preventDefault(); addFilmSeries(); return; }
+    if(document.getElementById('filmSeriesModal').classList.contains('open') && !isTextarea){ e.preventDefault(); saveFilmSeries(); return; }
   }
 });
 
@@ -2586,6 +3368,11 @@ function toggleFavorite(id){
   if(item){
     const btn = item.querySelector('.fav-btn');
     if(btn){ btn.classList.toggle('active', s.favorite); }
+  }
+  const card = document.getElementById('card-'+id);
+  if(card){
+    const cbtn = card.querySelector('.series-card-fav');
+    if(cbtn){ cbtn.classList.toggle('active', s.favorite); }
   }
   const sdBtn = document.getElementById('sdFavBtn');
   if(sdBtn){ sdBtn.classList.toggle('active', s.favorite); sdBtn.title = s.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'; }
@@ -2722,24 +3509,17 @@ function addSeries(){
   const eps=parseInt(document.getElementById('eps').value);
   const films=parseInt(document.getElementById('films').value)||0;
   const type=document.getElementById('type').value;
+  const imdbId=document.getElementById('imdbId').value.trim();
+  const image=imdbPosterUrl(imdbId);
   const notes=document.getElementById('notes').value.trim();
   const ongoing=_addOngoing;
   if(!title||!eps||eps<1){ toast('Compila titolo ed episodi','error'); return; }
   if(db.series.find(s=>s.title.toLowerCase()===title.toLowerCase())){ toast('Serie già presente','error'); return; }
-  const newSeries={id:crypto.randomUUID(),title,eps,films,type,notes,ongoing,inRoadmap:false,addedAt:Date.now()};
+  const newSeries={id:crypto.randomUUID(),title,eps,films,type,imdbId,image,notes,ongoing,inRoadmap:false,addedAt:Date.now()};
   db.series.push(newSeries);
   save();
   localStorage.setItem('st_lastSeriesType', type);
-  const listId = type==='DUB' ? 'dub-list' : 'sub-list';
-  const countId = type==='DUB' ? 'dub-count' : 'sub-count';
-  const listEl = document.getElementById(listId);
-  const empty = listEl.querySelector('.empty');
-  if(empty) listEl.innerHTML='';
-  const filtered = db.series.filter(s=>!s.inRoadmap&&s.type===type);
-  const sorted = renderSortedSeries(filtered);
-  listEl.innerHTML = sorted.map((s,i)=>buildItemHTML(s,i)).join('');
-  document.getElementById(countId).textContent = sorted.length;
-  updateCatalogStats();
+  renderCatalog();
   // Reset solo titolo, episodi, film, note — mantieni tipo e ongoing
   document.getElementById('title').value='';
   document.getElementById('eps').value='';
@@ -2754,18 +3534,7 @@ function removeSeries(id){
   if(!s) return;
   db.series=db.series.filter(x=>x.id!==id);
   save();
-  // Rimuovi solo il nodo DOM
-  const node=document.getElementById('item-'+id);
-  if(node) node.remove();
-  // Aggiorna numerazione e contatori
-  const listId = s.type==='DUB' ? 'dub-list' : 'sub-list';
-  const countId = s.type==='DUB' ? 'dub-count' : 'sub-count';
-  const listEl = document.getElementById(listId);
-  const items = listEl.querySelectorAll('.item');
-  if(!items.length){ listEl.innerHTML=`<div class="empty"><div class="empty-icon">◌</div>Nessuna serie</div>`; }
-  else{ items.forEach((el,i)=>{ const num=el.querySelector('.item-num'); if(num) num.textContent=i+1; }); }
-  document.getElementById(countId).textContent=items.length||0;
-  updateCatalogStats();
+  renderCatalog();
   toast('Serie rimossa','info');
 }
 
@@ -2773,20 +3542,9 @@ function addToRoadmap(id){
   const s=db.series.find(x=>x.id===id);
   if(!s||s.inRoadmap){ toast('Già in roadmap','error'); return; }
   s.inRoadmap=true;
-  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,notes:s.notes||'',ongoing:!!s.ongoing,status:'normal',currentEp:0});
+  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,imdbId:s.imdbId||'',image:s.image||'',notes:s.notes||'',ongoing:!!s.ongoing,status:'normal',currentEp:0});
   save();
-  // Rimuovi dal catalogo DOM
-  const node=document.getElementById('item-'+id);
-  if(node) node.remove();
-  const listId = s.type==='DUB' ? 'dub-list' : 'sub-list';
-  const countId = s.type==='DUB' ? 'dub-count' : 'sub-count';
-  const listEl = document.getElementById(listId);
-  const items = listEl.querySelectorAll('.item');
-  if(!items.length){ listEl.innerHTML=`<div class="empty"><div class="empty-icon">◌</div>Nessuna serie</div>`; }
-  else{ items.forEach((el,i)=>{ const num=el.querySelector('.item-num'); if(num) num.textContent=i+1; }); }
-  document.getElementById(countId).textContent=items.length||0;
-  updateCatalogStats();
-  // Aggiungi in roadmap DOM
+  renderCatalog();
   renderRoadmap();
   toast('Aggiunto alla roadmap ✓','success');
 }
@@ -2797,7 +3555,15 @@ function updateCatalogStats(){
   const favCount=all.filter(s=>s.favorite).length;
   const favActiveCls = _onlyFavorites ? ' fav-active' : '';
   const favPill = `<div class="stat-pill stat-pill-preferiti${favActiveCls}" onclick="toggleOnlyFavorites()">★ Preferiti: <strong>${favCount}</strong></div>`;
-  document.getElementById('catalogStats').innerHTML=`<div class="stat-pill"><span class="dot amber"></span> Ep totali: <strong>${totalEps}</strong></div><div class="stat-pill"><span class="dot"></span> Totale: <strong>${all.length}</strong></div><div class="stat-pill"><span class="dot blue"></span> DUB: <strong>${all.filter(s=>s.type==='DUB').length}</strong></div><div class="stat-pill"><span class="dot red"></span> SUB: <strong>${all.filter(s=>s.type==='SUB').length}</strong></div>${favPill}<span class="ep-filter-badge" id="epFilterBadge"></span>`;
+  const typeClickable = _catalogViewMode === 'cards';
+  const dubActiveCls = (typeClickable && _cardTypeFilter==='DUB') ? ' type-pill-active dub-active' : '';
+  const subActiveCls = (typeClickable && _cardTypeFilter==='SUB') ? ' type-pill-active sub-active' : '';
+  const typeDisabledCls = typeClickable ? '' : ' stat-pill-type-disabled';
+  const dubOnclick = typeClickable ? ` onclick="toggleCardTypeFilter('DUB')"` : '';
+  const subOnclick = typeClickable ? ` onclick="toggleCardTypeFilter('SUB')"` : '';
+  const dubPill = `<div class="stat-pill stat-pill-type${typeDisabledCls}${dubActiveCls}"${dubOnclick} title="${typeClickable?'Filtra: solo doppiati (vista schede)':''}"><span class="dot blue"></span> DUB: <strong>${all.filter(s=>s.type==='DUB').length}</strong></div>`;
+  const subPill = `<div class="stat-pill stat-pill-type${typeDisabledCls}${subActiveCls}"${subOnclick} title="${typeClickable?'Filtra: solo sottotitolati (vista schede)':''}"><span class="dot red"></span> SUB: <strong>${all.filter(s=>s.type==='SUB').length}</strong></div>`;
+  document.getElementById('catalogStats').innerHTML=`<div class="stat-pill"><span class="dot amber"></span> Ep totali: <strong>${totalEps}</strong></div><div class="stat-pill"><span class="dot"></span> Totale: <strong>${all.length}</strong></div>${dubPill}${subPill}${favPill}<span class="ep-filter-badge" id="epFilterBadge"></span>`;
 }
 
 let _onlyFavorites = false;
@@ -2808,7 +3574,87 @@ function toggleOnlyFavorites(){
 
 function renderSortedSeries(list){
   const sort=document.getElementById('catalogSort')?.value||'eps';
-  return [...list].sort((a,b)=>{ if(sort==='title') return a.title.localeCompare(b.title); if(sort==='recent') return (b.addedAt||0)-(a.addedAt||0); return a.eps-b.eps||a.title.localeCompare(b.title); });
+  return [...list].sort((a,b)=>{ if(sort==='title') return a.title.localeCompare(b.title); if(sort==='za') return b.title.localeCompare(a.title); if(sort==='recent') return (b.addedAt||0)-(a.addedAt||0); return a.eps-b.eps||a.title.localeCompare(b.title); });
+}
+function escAttr(str){ return String(str==null?'':str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function imdbPosterUrl(imdbId){
+  const id = String(imdbId||'').trim();
+  if(!id) return '';
+  return `https://btttr.cc/poster-n/imdb/poster-default/${id}.jpg?tag=none`;
+}
+
+// ---- VISTA SCHEDE (toggle Liste ON/OFF, default = schede + filtro Dub/Sub) ----
+let _catalogViewMode = localStorage.getItem('st_catalogViewMode') || 'cards';
+let _cardTypeFilter = null;
+function setCatalogViewMode(mode){
+  if(_catalogViewMode===mode) return;
+  _catalogViewMode = mode;
+  localStorage.setItem('st_catalogViewMode', mode);
+  renderCatalog();
+}
+function toggleCatalogListMode(){
+  setCatalogViewMode(_catalogViewMode==='list' ? 'cards' : 'list');
+}
+function toggleCardTypeFilter(type){
+  _cardTypeFilter = (_cardTypeFilter===type) ? null : type;
+  renderCatalog();
+}
+function updateCatalogViewUI(){
+  const listBtn=document.getElementById('catalogViewListBtn');
+  if(listBtn) listBtn.classList.toggle('active', _catalogViewMode==='list');
+  const subtab=document.getElementById('catalog-serie-subtab');
+  if(subtab) subtab.classList.toggle('cards-mode', _catalogViewMode==='cards');
+  const cardsGrid=document.getElementById('catalog-cards-grid');
+  if(cardsGrid) cardsGrid.style.display = _catalogViewMode==='cards' ? '' : 'none';
+}
+// Il toggle nasconde/mostra SOLO la casella di ricerca: il filtro episodi e
+// l'ordinamento restano sempre visibili nella riga.
+let _catalogFiltersHidden = true;
+function toggleCatalogFilters(){
+  _catalogFiltersHidden = !_catalogFiltersHidden;
+  const row = document.getElementById('catalogSearchRow');
+  if(row) row.classList.toggle('filters-hidden', _catalogFiltersHidden);
+  const btn = document.getElementById('catalogFilterToggleBtn');
+  if(btn) btn.classList.toggle('active', _catalogFiltersHidden);
+}
+function buildCardHTML(s, i){
+  const imgHtml = s.image
+    ? `<img class="series-card-poster" src="${escAttr(s.image)}" alt="${escAttr(s.title)}" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
+    : `<div class="series-card-noimg">🎬</div>`;
+  const typeCls = s.type==='DUB' ? 'dub' : 'sub';
+  let filmTagHtml = '';
+  if(s.films){
+    const connectedFilms = [...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===s.id);
+    const filmListText = connectedFilms.length ? connectedFilms.map(f=>f.title).join('\n') : `${s.films} film collegati`;
+    filmTagHtml = `<span class="series-card-corner tag-film" data-tooltip="${escAttr(filmListText)}" onmouseenter="showRmTooltip(this)" onmouseleave="hideRmTooltip()">${s.films} film</span>`;
+  }
+  const noteTagHtml = s.notes ? `<span class="series-card-note-tag" data-tooltip="${escAttr(s.notes)}" onmouseenter="showRmTooltip(this)" onmouseleave="hideRmTooltip()">🗒 Nota</span>` : '';
+  return `
+    <div class="series-card ${s.ongoing ? 'is-ongoing' : ''}" style="animation:itemIn .2s ${staggerDelay(i,0.02,0.3)}s both${s.ongoing ? ', cardOngoingAura 1.3s ease-in-out infinite' : ''};" id="card-${s.id}">
+      <div class="series-card-poster-wrap">
+        ${imgHtml}
+        <span class="series-card-corner tag-type ${typeCls}">${s.type}</span>
+        ${filmTagHtml}
+        <div class="series-card-poster-overlay">
+          <button class="series-card-overlay-btn" title="Aggiungi a roadmap" onclick="event.stopPropagation();addToRoadmap('${s.id}')">＋</button>
+          <button class="series-card-overlay-btn" title="Modifica" onclick="event.stopPropagation();openEditModal('${s.id}')">✎</button>
+        </div>
+      </div>
+      <div class="series-card-bottom" onclick="openSeriesDetail('${s.id}')">
+        <div class="series-card-title">${s.title}</div>
+        <div class="series-card-meta">
+          <span class="series-card-eps">${s.eps} ep</span>
+          ${noteTagHtml}
+          <button class="series-card-fav ${s.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${s.id}')" title="Preferito">★</button>
+        </div>
+      </div>
+    </div>`;
+}
+function renderCards(list){
+  const el=document.getElementById('catalog-cards-list');
+  if(!el) return;
+  if(!list.length){ el.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">◌</div>Nessuna serie</div>`; return; }
+  el.innerHTML=list.map((s,i)=>buildCardHTML(s,i)).join('');
 }
 function renderList(id,data){
   const el=document.getElementById(id);
@@ -2846,6 +3692,7 @@ function openEditModal(id){
   document.getElementById('editModalEps').value=s.eps;
   document.getElementById('editModalFilms').value=s.films||'';
   document.getElementById('editModalType').value=s.type||'DUB';
+  document.getElementById('editModalImdbId').value=s.imdbId||'';
   document.getElementById('editModalNotes').value=s.notes||'';
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
@@ -2855,6 +3702,7 @@ function openEditModal(id){
 function closeEditModal(){
   document.getElementById('editSeriesModal').classList.remove('open');
   _editingSeriesId=null;
+  const ir=document.getElementById('editModalImdbSearchResults'); if(ir){ ir.classList.remove('open'); ir.innerHTML=''; }
 }
 function handleEditOverlayClick(e){
   if(e.target===document.getElementById('editSeriesModal')) closeEditModal();
@@ -2869,11 +3717,13 @@ function saveEditModal(){
   const newEps=parseInt(document.getElementById('editModalEps').value);
   const newFilms=parseInt(document.getElementById('editModalFilms').value)||0;
   const newType=document.getElementById('editModalType').value;
+  const newImdbId=document.getElementById('editModalImdbId').value.trim();
+  const newImage=imdbPosterUrl(newImdbId);
   const newNotes=document.getElementById('editModalNotes').value.trim();
   if(!newTitle||!newEps||newEps<1){ toast('Dati non validi','error'); return; }
-  s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.notes=newNotes; s.ongoing=_editOngoing;
-  // Propaga titolo/episodi/tipo su tutti gli array in cui l'id compare
-  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; } });
+  s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.imdbId=newImdbId; s.image=newImage; s.notes=newNotes; s.ongoing=_editOngoing;
+  // Propaga titolo/episodi/tipo/imdb/poster su tutti gli array in cui l'id compare
+  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; r.imdbId=newImdbId; r.image=newImage; } });
   save();
   // Ricostruisce la sezione dove si trova l'elemento modificato
   if(found.list==='series') renderCatalog();
@@ -2887,9 +3737,15 @@ function saveEditModal(){
   toast('Serie aggiornata ✓','success');
   closeEditModal();
 }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEditModal(); closeSeriesDetail(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEditModal(); closeSeriesDetail(); closeAnimeFranchiseModal(); } });
 
+let _catalogRenderDebounce=null;
+function renderCatalogDebounced(){
+  clearTimeout(_catalogRenderDebounce);
+  _catalogRenderDebounce=setTimeout(renderCatalog,150);
+}
 function renderCatalog(){
+  updateCatalogViewUI();
   const q=(document.getElementById('catalogSearch')?.value||'').toLowerCase();
   const epF=parseInt(document.getElementById('epFilterInput')?.value)||0;
   const sort=document.getElementById('catalogSort')?.value||'eps';
@@ -2897,14 +3753,24 @@ function renderCatalog(){
   const badge=document.getElementById('epFilterBadge');
   if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
   // Evita di ricostruire (e rigiocare la cascata) se niente è cambiato da quando è stata renderizzata l'ultima volta
-  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites)) return;
+  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites+'|'+_catalogViewMode+'|'+_cardTypeFilter)) return;
   let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite));
-  const dubs=renderSortedSeries(filtered.filter(s=>s.type==='DUB'));
-  const subs=renderSortedSeries(filtered.filter(s=>s.type==='SUB'));
-  document.getElementById('dub-count').textContent=dubs.length;
-  document.getElementById('sub-count').textContent=subs.length;
-  renderList('dub-list',dubs);
-  renderList('sub-list',subs);
+  // Costruisce solo la vista attualmente visibile (lista o schede): l'altra viene aggiornata
+  // solo quando l'utente effettivamente ci passa, evitando di ricostruire il DOM doppio ad ogni ricerca/filtro.
+  if(_catalogViewMode==='list'){
+    const dubs=renderSortedSeries(filtered.filter(s=>s.type==='DUB'));
+    const subs=renderSortedSeries(filtered.filter(s=>s.type==='SUB'));
+    document.getElementById('dub-count').textContent=dubs.length;
+    document.getElementById('sub-count').textContent=subs.length;
+    renderList('dub-list',dubs);
+    renderList('sub-list',subs);
+  } else {
+    document.getElementById('dub-count').textContent=filtered.filter(s=>s.type==='DUB').length;
+    document.getElementById('sub-count').textContent=filtered.filter(s=>s.type==='SUB').length;
+    let cardsPool = filtered;
+    if(_cardTypeFilter) cardsPool = cardsPool.filter(s=>s.type===_cardTypeFilter);
+    renderCards(renderSortedSeries(cardsPool));
+  }
 }
 
 // ---- ROADMAP ----
@@ -2918,21 +3784,10 @@ function addRandom(forceType){
   let r=Math.random()*total, picked=pool[pool.length-1];
   for(let i=0;i<pool.length;i++){ r-=weights[i]; if(r<=0){picked=pool[i];break;} }
   picked.inRoadmap=true;
-  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,notes:picked.notes||'',ongoing:!!picked.ongoing,status:'normal',currentEp:0});
+  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,imdbId:picked.imdbId||'',image:picked.image||'',notes:picked.notes||'',ongoing:!!picked.ongoing,status:'normal',currentEp:0});
   if(!forceType) db.patternIndex=(db.patternIndex+1)%PATTERN.length;
   save();
-  // Rimuovi dalla lista catalogo DOM
-  const node=document.getElementById('item-'+picked.id);
-  if(node){
-    const listEl=node.closest('.list');
-    node.remove();
-    const countId=picked.type==='DUB'?'dub-count':'sub-count';
-    const items=listEl.querySelectorAll('.item');
-    if(!items.length) listEl.innerHTML=`<div class="empty"><div class="empty-icon">◌</div>Nessuna serie</div>`;
-    else items.forEach((el,i)=>{ const n=el.querySelector('.item-num'); if(n) n.textContent=i+1; });
-    document.getElementById(countId).textContent=items.length||0;
-    updateCatalogStats();
-  }
+  renderCatalog();
   renderRoadmap();
   toast(`${picked.favorite?'★ ':''}Aggiunto: ${picked.title}`,'success');
 }
@@ -2969,15 +3824,23 @@ function buildRmItemHTML(r, i){
     const tooltipText = filmListStr.replace(/"/g,'&quot;').replace(/</g,'&lt;');
     filmsTag = ` · <span class="rm-notes-badge" data-tooltip="${tooltipText}" onmouseenter="showRmTooltip(this)" onmouseleave="hideRmTooltip()">${_filmsCount} FILM</span>`;
   }
-  return `<div class="rm-item ${r.status==='watching'?'watching':''} ${r.status==='paused'?'paused':''}" data-id="${r.id}" style="animation:itemIn .22s ${staggerDelay(i,0.04,0.3)}s both;cursor:pointer;" onclick="handleRmItemClick(event,'${r.id}')">
+  const _image = _srcSeries?.image || '';
+  const posterHtml = _image
+    ? `<div class="rm-poster"><img src="${escAttr(_image)}" alt="" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
+    : `<div class="rm-poster"><span class="rm-poster-noimg">🎬</span></div>`;
+  // Ha una scheda nel pannello "Da ricordare" se in visione e con note e/o film collegati
+  const _linkedFilmsForAlert = (db.films||[]).filter(f=>f.seriesId===r.id).length;
+  const hasAlertEntry = r.status==='watching' && (!!_notes || _linkedFilmsForAlert>0);
+  const alertBadge = hasAlertEntry ? `<span class="rm-alert-linked-badge" title="Presente nel pannello Da ricordare">🔔</span>` : '';
+  return `<div class="rm-item ${r.status==='watching'?'watching':''} ${hasAlertEntry?'has-alert-link':''}" data-id="${r.id}" style="animation:itemIn .22s ${staggerDelay(i,0.04,0.3)}s both;cursor:pointer;" onclick="handleRmItemClick(event,'${r.id}')">
+    ${posterHtml}
     <div class="drag-handle">⠿</div>
     <div class="rm-num">${String(i+1).padStart(2,'0')}</div>
     <div class="rm-info">
-      <div class="rm-name">${r.title}</div>
+      <div class="rm-name">${r.title}${alertBadge}</div>
       <div class="rm-meta">${r.eps} ep${filmsTag}${_notes ? ' · ' : ''}${notesTooltip}</div>
     </div>
     ${r.status==='watching'?`<div class="watching-tag">watching</div>`:''}
-    ${r.status==='paused'?`<div class="paused-tag">in pausa</div>`:''}
     ${r.status==='watching'?`<div class="ep-stepper"><button class="step-btn" onclick="stepEp('${r.id}',-1)">‹</button><input class="ep-input" type="number" min="0" max="${r.eps}" value="${r.currentEp||0}" onchange="updateEp('${r.id}',this.value)"><span class="ep-total">/${r.eps}</span><button class="step-btn" onclick="stepEp('${r.id}',1)">›</button></div>`:''}
     <span class="badge ${r.type.toLowerCase()}">${r.type}</span>
     <div class="reorder-btns">
@@ -3028,20 +3891,8 @@ function setWatching(id){
     const idx=db.roadmap.findIndex(r=>r.id===id);
     node.outerHTML=buildRmItemHTML(item, idx);
   }
+  renderRoadmapAlerts();
   toast(item.status==='watching'?`▶ In visione: ${item.title}`:`⏸ Interrotto: ${item.title}`);
-}
-function setPaused(id){
-  const item=db.roadmap.find(r=>r.id===id);
-  if(!item) return;
-  const turningOn = item.status!=='paused';
-  item.status = turningOn ? 'paused' : 'normal';
-  save();
-  const node=document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
-  if(node){
-    const idx=db.roadmap.findIndex(r=>r.id===id);
-    node.outerHTML=buildRmItemHTML(item, idx);
-  }
-  toast(item.status==='paused'?`⏸ In pausa: ${item.title}`:`▶ Ripreso: ${item.title}`);
 }
 
 // ---- ROADMAP ITEM — DETAIL POPUP (riusa #seriesDetailOverlay) ----
@@ -3052,14 +3903,13 @@ function openRoadmapDetail(id){
 
   document.getElementById('sdTags').innerHTML =
     `<span class="badge ${r.type.toLowerCase()}">${r.type}</span>` +
-    (r.status==='watching' ? `<span class="watching-tag">watching</span>` : '') +
-    (r.status==='paused' ? `<span class="paused-tag">in pausa</span>` : '');
+    (r.status==='watching' ? `<span class="watching-tag">watching</span>` : '');
   document.getElementById('sdTitle').textContent = r.title;
 
   let html = '<div class="sd-stats">';
   html += `<div class="sd-stat"><div class="sd-stat-label">Episodi</div><div class="sd-stat-value">${r.currentEp||0} / ${r.eps}</div></div>`;
   html += `<div class="sd-stat"><div class="sd-stat-label">Tipo</div><div class="sd-stat-value">${r.type}</div></div>`;
-  html += `<div class="sd-stat"><div class="sd-stat-label">Stato</div><div class="sd-stat-value">${r.status==='watching'?'In visione':r.status==='paused'?'In pausa':'Da iniziare'}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Stato</div><div class="sd-stat-value">${r.status==='watching'?'In visione':'Da iniziare'}</div></div>`;
   html += '</div>';
   const _srcSeries = db.series.find(x=>x.id===r.id);
   const _notes = _srcSeries?.notes || r.notes || '';
@@ -3069,8 +3919,8 @@ function openRoadmapDetail(id){
   html += `<div class="sd-section-label">Stato visione</div>`;
   html += `<div class="rm-detail-actions">
     <button class="rm-detail-action ${r.status==='watching'?'active':''}" onclick="rdToggleWatching('${r.id}')"><span class="rda-icon">▶</span><span>${r.status==='watching'?'Stop':'Watching'}</span></button>
-    <button class="rm-detail-action ${r.status==='paused'?'paused-active':''}" onclick="rdTogglePaused('${r.id}')"><span class="rda-icon">⏸</span><span>${r.status==='paused'?'Riprendi da Pausa':'Pausa'}</span></button>
     <button class="rm-detail-action danger" onclick="rdDrop('${r.id}')"><span class="rda-icon">✕</span><span>Drop</span></button>
+    <button class="rm-detail-action" onclick="rdBackToCatalogo('${r.id}')"><span class="rda-icon">◌</span><span>Torna al catalogo</span></button>
   </div>`;
   document.getElementById('sdBody').innerHTML = html;
 
@@ -3081,13 +3931,15 @@ function openRoadmapDetail(id){
   document.getElementById('seriesDetailOverlay').classList.add('open');
 }
 function rdToggleWatching(id){ setWatching(id); openRoadmapDetail(id); }
-function rdTogglePaused(id){ setPaused(id); openRoadmapDetail(id); }
 function rdDrop(id){ closeSeriesDetail(); dropEntry(id); }
+function rdBackToCatalogo(id){ closeSeriesDetail(); backToCalatogo_fromRoadmap(id); }
 
 function dropEntry(id){
   const idx=db.roadmap.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.roadmap.splice(idx,1)[0];
+  const _src=db.series.find(s=>s.id===item.id);
+  if(_src && _src.notes) item.notes=_src.notes; // porta con sé l'ultima nota salvata
   db.dropped.push(item);
   db.series=db.series.filter(s=>s.id!==item.id);
   save(); renderRoadmap(); renderDropped(); toast(`Droppato: ${item.title}`,'info');
@@ -3096,6 +3948,8 @@ function completeEntry(id){
   const idx=db.roadmap.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.roadmap.splice(idx,1)[0];
+  const _src=db.series.find(s=>s.id===item.id);
+  if(_src && _src.notes) item.notes=_src.notes; // porta con sé l'ultima nota salvata
   db.completed.push({...item,completedAt:Date.now()});
   db.series=db.series.filter(s=>s.id!==item.id);
   save(); renderRoadmap(); renderCompleted(); toast(`✓ Completato: ${item.title}`,'success');
@@ -3106,7 +3960,7 @@ function backToRoadmap_fromCompleted(id){
   const item=db.completed.splice(idx,1)[0];
   item.status='normal'; delete item.completedAt;
   db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
   save(); renderRoadmap(); renderCompleted(); toast(`Riportato in roadmap: ${item.title}`,'success');
 }
 function backToCalatogo_fromRoadmap(id){
@@ -3115,14 +3969,14 @@ function backToCalatogo_fromRoadmap(id){
   const item=db.roadmap.splice(idx,1)[0];
   const existing=db.series.find(s=>s.id===item.id);
   if(existing) existing.inRoadmap=false;
-  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
+  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
   save(); renderRoadmap(); renderCatalog(); toast(`${item.title} torna in catalogo`,'info');
 }
 function backToCatalogo_fromDropped(id){
   const idx=db.dropped.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
   save(); renderDropped(); renderCatalog(); toast(`${item.title} ripristinato in catalogo`,'info');
 }
 function restoreDropped(id){
@@ -3130,7 +3984,7 @@ function restoreDropped(id){
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
   item.status='normal'; db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
   save(); renderRoadmap(); renderDropped(); toast(`Ripristinato in roadmap: ${item.title}`,'success');
 }
 
@@ -3227,18 +4081,110 @@ function renderRoadmap(){
   document.getElementById('roadmap-count').textContent=db.roadmap.length;
   const watchingEl=document.getElementById('watching-count');
   if(watchingEl) watchingEl.textContent=db.roadmap.filter(r=>r.status==='watching').length;
+  renderRoadmapAlerts();
   if(_skipIfUnchanged('roadmap')) return;
   if(!db.roadmap.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">▷</div>Roadmap vuota</div>`; return; }
   el.innerHTML=db.roadmap.map((r,i)=>buildRmItemHTML(r,i)).join('');
   initDragDrop(el,db.roadmap,renderRoadmap);
 }
+
+// ---- RIQUADRO "DA RICORDARE": serie in visione con note e/o film collegati ancora da vedere ----
+function renderRoadmapAlerts(){
+  const col = document.getElementById('roadmapAlertCol');
+  const layout = document.getElementById('programmaLayout');
+  if(!col || !layout) return;
+  const watching = (db.roadmap||[]).filter(r=>r.status==='watching');
+  const items = watching.map(r=>{
+    // Le note "vere" vivono sulla scheda serie in db.series (stessa fonte usata dalla
+    // roadmap stessa): qui bisogna leggere da lì, non dal campo notes della voce
+    // roadmap che può restare non aggiornato.
+    const _srcSeries = db.series.find(x=>x.id===r.id);
+    const notes = (_srcSeries?.notes || r.notes || '').trim();
+    const hasNotes = !!notes;
+    const linkedFilms = (db.films||[]).filter(f=>f.seriesId===r.id);
+    if(!hasNotes && !linkedFilms.length) return null;
+    return { r, notes, hasNotes, linkedFilms };
+  }).filter(Boolean);
+
+  if(!items.length){
+    col.innerHTML = '';
+    col.classList.remove('visible');
+    layout.classList.remove('has-alerts');
+    return;
+  }
+  col.classList.add('visible');
+  layout.classList.add('has-alerts');
+
+  const MAX_FILMS_SHOWN = 3;
+  const cards = items.map(({r,notes,hasNotes,linkedFilms})=>{
+    const notesHtml = hasNotes ? `<div class="rm-alert-note">🗒 ${notes.replace(/</g,'&lt;')}</div>` : '';
+    let filmsHtml = '';
+    if(linkedFilms.length){
+      const shown = linkedFilms.slice(0, MAX_FILMS_SHOWN);
+      const extra = linkedFilms.length - shown.length;
+      filmsHtml = `<div class="rm-alert-films">
+        ${shown.map(f=>`<span class="rm-alert-film">${f.title}</span>`).join('')}
+        ${extra>0 ? `<span class="rm-alert-films-more">+${extra} altri</span>` : ''}
+      </div>`;
+    }
+    return `<div class="rm-alert-card" data-id="${r.id}" onclick="openRoadmapDetail('${r.id}')">
+      <div class="rm-alert-card-title"><span class="badge ${r.type.toLowerCase()}">${r.type}</span><span>${r.title}</span></div>
+      ${notesHtml}
+      ${filmsHtml}
+    </div>`;
+  }).join('');
+
+  col.innerHTML = `<div class="rm-alert-panel">
+    <div class="rm-alert-panel-title">🔔 Da ricordare</div>
+    ${cards}
+  </div>`;
+}
+
+// ---- Collegamento visivo voce-roadmap <-> scheda-pannello "da ricordare" ----
+// Passando il mouse sull'una si evidenzia anche l'altra, per capire subito a
+// quale voce della roadmap si riferisce ogni promemoria del pannello.
+function _rmSetLinkHighlight(id, on){
+  const item = document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
+  const card = document.querySelector(`#roadmapAlertCol .rm-alert-card[data-id="${id}"]`);
+  if(item) item.classList.toggle('linked-highlight', on);
+  if(card) card.classList.toggle('linked-highlight', on);
+}
+(function initRmAlertLinkHover(){
+  const roadmapEl = document.getElementById('roadmap');
+  const alertColEl = document.getElementById('roadmapAlertCol');
+  if(roadmapEl){
+    roadmapEl.addEventListener('mouseover', e=>{
+      const item = e.target.closest('.rm-item');
+      if(item && item.dataset.id) _rmSetLinkHighlight(item.dataset.id, true);
+    });
+    roadmapEl.addEventListener('mouseout', e=>{
+      const item = e.target.closest('.rm-item');
+      if(item && item.dataset.id) _rmSetLinkHighlight(item.dataset.id, false);
+    });
+  }
+  if(alertColEl){
+    alertColEl.addEventListener('mouseover', e=>{
+      const card = e.target.closest('.rm-alert-card');
+      if(card && card.dataset.id) _rmSetLinkHighlight(card.dataset.id, true);
+    });
+    alertColEl.addEventListener('mouseout', e=>{
+      const card = e.target.closest('.rm-alert-card');
+      if(card && card.dataset.id) _rmSetLinkHighlight(card.dataset.id, false);
+    });
+  }
+})();
 function renderDropped(){
   const el=document.getElementById('dropped'),label=document.getElementById('dropped-label');
   document.getElementById('drop-count').textContent=db.dropped.length;
   if(!db.dropped.length){ el.innerHTML=''; label.style.display='none'; _invalidateSig('dropped'); return; }
   label.style.display='flex';
   if(_skipIfUnchanged('dropped')) return;
-  el.innerHTML=db.dropped.map((r,i)=>`<div class="rm-item" style="opacity:0.65" data-id="${r.id}"><div class="drag-handle">⠿</div><div class="rm-num">${String(i+1).padStart(2,'0')}</div><div class="rm-info"><div class="rm-name" style="text-decoration:line-through">${r.title}</div><div class="rm-meta">${r.eps} ep</div></div><span class="badge dropped">dropped</span><div class="rm-actions"><button class="item-btn" onclick="restoreDropped('${r.id}')" title="Ripristina">↩</button><button class="item-btn go-back" onclick="backToCatalogo_fromDropped('${r.id}')" title="Torna catalogo">◌</button></div></div>`).join('');
+  el.innerHTML=db.dropped.map((r,i)=>{
+    const posterHtml = r.image
+      ? `<div class="rm-poster"><img src="${escAttr(r.image)}" alt="" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
+      : `<div class="rm-poster"><span class="rm-poster-noimg">🎬</span></div>`;
+    return `<div class="rm-item" style="opacity:0.65" data-id="${r.id}">${posterHtml}<div class="drag-handle">⠿</div><div class="rm-num">${String(i+1).padStart(2,'0')}</div><div class="rm-info"><div class="rm-name" style="text-decoration:line-through">${r.title}</div><div class="rm-meta">${r.eps} ep</div></div><span class="badge dropped">dropped</span><div class="rm-actions"><button class="item-btn" onclick="restoreDropped('${r.id}')" title="Ripristina">↩</button></div></div>`;
+  }).join('');
   initDragDrop(el,db.dropped,renderDropped);
 }
 
@@ -3445,34 +4391,69 @@ document.addEventListener('click', function(e){
 
 // ---- FILM SERIES MANAGER ----
 function openFilmSeriesModal(){
+  cancelEditFilmSeries();
   renderFilmSeriesList();
   document.getElementById('filmSeriesModal').classList.add('open');
   setTimeout(()=>document.getElementById('newFilmSeriesTitle').focus(),80);
 }
 function closeFilmSeriesModal(){
   document.getElementById('filmSeriesModal').classList.remove('open');
-  document.getElementById('newFilmSeriesTitle').value='';
-  document.getElementById('newFilmSeriesCount').value='';
+  cancelEditFilmSeries();
 }
 function handleFilmSeriesOverlayClick(e){
   if(e.target===document.getElementById('filmSeriesModal')) closeFilmSeriesModal();
 }
-function addFilmSeries(){
+let _editingFilmSeriesId = null;
+function editFilmSeries(id){
+  const s = (db.filmSeries||[]).find(x=>x.id===id);
+  if(!s) return;
+  _editingFilmSeriesId = id;
+  document.getElementById('newFilmSeriesTitle').value = s.title;
+  document.getElementById('newFilmSeriesCount').value = s.count;
+  const btn = document.getElementById('filmSeriesSaveBtn');
+  if(btn) btn.textContent = '✓';
+  const hint = document.getElementById('filmSeriesEditHint');
+  if(hint) hint.style.display = '';
+  document.getElementById('newFilmSeriesTitle').focus();
+}
+function cancelEditFilmSeries(){
+  _editingFilmSeriesId = null;
+  document.getElementById('newFilmSeriesTitle').value='';
+  document.getElementById('newFilmSeriesCount').value='';
+  const btn = document.getElementById('filmSeriesSaveBtn');
+  if(btn) btn.textContent = '+';
+  const hint = document.getElementById('filmSeriesEditHint');
+  if(hint) hint.style.display = 'none';
+}
+function saveFilmSeries(){
   const title = document.getElementById('newFilmSeriesTitle').value.trim();
   const count = parseInt(document.getElementById('newFilmSeriesCount').value)||0;
   if(!title){ toast('Inserisci il nome della saga','error'); return; }
   if(count < 2){ toast('Una saga deve avere almeno 2 film','error'); return; }
   if(!db.filmSeries) db.filmSeries=[];
-  if(db.filmSeries.find(s=>s.title.toLowerCase()===title.toLowerCase())){ toast('Saga già presente','error'); return; }
-  db.filmSeries.push({ id: crypto.randomUUID(), title, count, addedAt: Date.now() });
-  save();
-  document.getElementById('newFilmSeriesTitle').value='';
-  document.getElementById('newFilmSeriesCount').value='';
-  renderFilmSeriesList();
-  renderFilms();
-  toast('Saga aggiunta ✓','success');
+  const dup = db.filmSeries.find(s=>s.title.toLowerCase()===title.toLowerCase() && s.id!==_editingFilmSeriesId);
+  if(dup){ toast('Saga già presente','error'); return; }
+  if(_editingFilmSeriesId){
+    const s = db.filmSeries.find(x=>x.id===_editingFilmSeriesId);
+    if(!s){ cancelEditFilmSeries(); return; }
+    s.title = title; s.count = count;
+    save();
+    cancelEditFilmSeries();
+    renderFilmSeriesList();
+    renderFilms();
+    toast('Saga aggiornata ✓','success');
+  } else {
+    db.filmSeries.push({ id: crypto.randomUUID(), title, count, addedAt: Date.now() });
+    save();
+    document.getElementById('newFilmSeriesTitle').value='';
+    document.getElementById('newFilmSeriesCount').value='';
+    renderFilmSeriesList();
+    renderFilms();
+    toast('Saga aggiunta ✓','success');
+  }
 }
 function removeFilmSeries(id){
+  if(_editingFilmSeriesId===id) cancelEditFilmSeries();
   db.filmSeries = (db.filmSeries||[]).filter(s=>s.id!==id);
   // Detach any films belonging to this series
   (db.films||[]).forEach(f=>{ if(f.seriesId===id){ f.seriesId=null; f.seriesOrder=null; } });
@@ -3485,7 +4466,7 @@ function renderFilmSeriesList(){
   if(!container) return;
   const series = (db.filmSeries||[]).sort((a,b)=>a.title.localeCompare(b.title));
   if(!series.length){ container.innerHTML='<div style="text-align:center;color:var(--muted);font-size:0.78rem;padding:1rem;">Nessuna saga creata</div>'; return; }
-  container.innerHTML = series.map(s=>{
+  const rowHtml = s=>{
     const used = [...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===s.id).length;
     const full = used >= s.count;
     return `<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;">
@@ -3493,9 +4474,22 @@ function renderFilmSeriesList(){
         <div style="font-weight:800;font-size:0.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.title}</div>
         <div style="font-size:0.65rem;color:var(--muted2);font-family:'DM Mono',monospace;margin-top:2px;">${used}/${s.count} film ${full?'<span style="color:var(--green)">● Completa</span>':''}</div>
       </div>
+      <button class="item-btn" onclick="editFilmSeries('${s.id}')" title="Modifica saga">✎</button>
       <button class="item-btn danger" onclick="removeFilmSeries('${s.id}')" title="Rimuovi saga">✕</button>
     </div>`;
-  }).join('');
+  };
+  const incomplete = series.filter(s=>{ const used=[...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===s.id).length; return used < s.count; });
+  const complete = series.filter(s=>{ const used=[...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===s.id).length; return used >= s.count; });
+  let html = '';
+  if(incomplete.length){
+    html += `<div style="font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin:2px 0 2px;">In corso</div>`;
+    html += incomplete.map(rowHtml).join('');
+  }
+  if(complete.length){
+    html += `<div style="font-size:0.68rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin:${incomplete.length?'12px':'2px'} 0 2px;">Completate</div>`;
+    html += complete.map(rowHtml).join('');
+  }
+  container.innerHTML = html;
 }
 
 // Returns available film series (not full), for selection in film add/edit
@@ -3506,7 +4500,7 @@ function getAnimeSagas(){
   [...db.series, ...db.roadmap, ...db.completed, ...db.dropped].forEach(s=>{
     if(!seen.has(s.id) && (s.films||0) >= 1){
       seen.add(s.id);
-      result.push({ id: s.id, title: s.title, count: s.films, _source: 'anime' });
+      result.push({ id: s.id, title: s.title, count: s.films, _source: 'anime', image: s.image||'', imdbId: s.imdbId||'' });
     }
   });
   return result.sort((a,b)=>a.title.localeCompare(b.title));
@@ -3656,6 +4650,8 @@ function addFilm(){
   const type = document.getElementById('filmType').value;
   const seriesId = document.getElementById('filmSeriesSelect').value || null;
   const notes = document.getElementById('filmNotes').value.trim();
+  const imdbId = document.getElementById('filmImdbId').value.trim();
+  const image = imdbPosterUrl(imdbId);
   const seriesRec = seriesId ? getSeriesRecord(seriesId) : null;
   const needsOrder = seriesRec && (seriesRec.count||0) >= 1;
   let seriesOrder = null;
@@ -3667,14 +4663,16 @@ function addFilm(){
   if(!title){ toast('Inserisci il titolo del film','error'); return; }
   if(seriesId && needsOrder && !seriesOrder){ toast('Seleziona la posizione nella saga','error'); return; }
   if(!db.films) db.films=[];
-  const film = {id:crypto.randomUUID(), title, type, seriesId, seriesOrder, notes, addedAt:Date.now()};
+  const film = {id:crypto.randomUUID(), title, type, seriesId, seriesOrder, notes, imdbId, image, addedAt:Date.now()};
   db.films.push(film);
   save();
   localStorage.setItem('st_lastFilmType', type);
   if(seriesId) localStorage.setItem('st_lastFilmSeriesId', seriesId);
-  // Reset solo titolo e note — tipo e saga restano invariati
+  // Reset solo titolo, imdb e note — tipo e saga restano invariati
   document.getElementById('filmTitle').value='';
   document.getElementById('filmNotes').value='';
+  document.getElementById('filmImdbId').value='';
+  const _ir=document.getElementById('filmImdbSearchResults'); if(_ir){ _ir.classList.remove('open'); _ir.innerHTML=''; }
   // renderFilms si occuperà di aggiornare l'ordine preservando la saga già selezionata
   renderFilms(); updateFilmStats();
   setTimeout(()=>{ const t=document.getElementById('filmTitle'); if(t) t.focus(); },30);
@@ -3715,14 +4713,16 @@ function openEditFilmModal(id){
   if(!film) return;
   _editingFilmId = id;
   document.getElementById('editFilmTitle').value = film.title;
-  document.getElementById('editFilmType').value = film.type;
+  setFilmTypeSquare('editFilmTypeCheckRow','editFilmType', film.type);
   populateFilmSeriesSelect('editFilmSeriesSelect','editFilmOrderGroup','editFilmOrderSelect', id, film.seriesId, film.seriesOrder);
   document.getElementById('editFilmNotes').value = film.notes||'';
+  document.getElementById('editFilmImdbId').value = film.imdbId||'';
   document.getElementById('editFilmModal').classList.add('open');
   setTimeout(()=>document.getElementById('editFilmTitle').focus(),80);
 }
 function closeEditFilmModal(){
   document.getElementById('editFilmModal').classList.remove('open');
+  const ir=document.getElementById('editFilmImdbSearchResults'); if(ir){ ir.classList.remove('open'); ir.innerHTML=''; }
   _editingFilmId=null;
 }
 function handleEditFilmOverlayClick(e){
@@ -3742,6 +4742,7 @@ function saveEditFilm(){
     seriesOrder = auto2 || parseInt(orderSel2.value) || null;
   }
   const notes = document.getElementById('editFilmNotes').value.trim();
+  const imdbId = document.getElementById('editFilmImdbId').value.trim();
   if(!title){ toast('Inserisci il titolo','error'); return; }
   if(seriesId && needsOrder2 && !seriesOrder){ toast('Seleziona la posizione nella saga','error'); return; }
   // Find in films or filmsCompleted
@@ -3749,6 +4750,7 @@ function saveEditFilm(){
   if(!film) film = (db.filmsCompleted||[]).find(f=>f.id===_editingFilmId);
   if(!film){ toast('Film non trovato','error'); return; }
   film.title=title; film.type=type; film.seriesId=seriesId; film.seriesOrder=seriesOrder; film.notes=notes;
+  film.imdbId=imdbId; film.image=imdbPosterUrl(imdbId);
   save(); renderFilms(); renderFilmsCompleted(); updateFilmStats();
   toast('Film aggiornato ✓','success');
   closeEditFilmModal();
@@ -3788,6 +4790,32 @@ function buildFilmItemHTML(film, idx){
   </div>`;
 }
 
+// Vista a schede (poster) per film stand-alone e film nelle Collezioni Film/Serie — riusa lo stile delle series-card
+function buildFilmCardHTML(film, idx){
+  const imgHtml = film.image
+    ? `<img class="series-card-poster" src="${escAttr(film.image)}" alt="${escAttr(film.title)}" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
+    : `<div class="series-card-noimg">🎬</div>`;
+  const typeCls = film.type==='DUB' ? 'dub' : 'sub';
+  const ordinalHtml = film.seriesOrder ? `<span class="series-card-corner tag-order">${getOrdinal(film.seriesOrder)}</span>` : '';
+  const noteTagHtml = film.notes ? `<span class="series-card-note-badge" data-tooltip="${escAttr(film.notes)}" onmouseenter="showRmTooltip(this)" onmouseleave="hideRmTooltip()">🗒</span>` : '';
+  return `
+    <div class="series-card" style="animation:itemIn .2s ${staggerDelay(idx,0.02,0.3)}s both;" id="film-card-${film.id}">
+      <div class="series-card-poster-wrap">
+        ${imgHtml}
+        <span class="series-card-corner tag-type ${typeCls}">${film.type}</span>
+        ${ordinalHtml}
+        <div class="series-card-poster-overlay">
+          <button class="series-card-overlay-btn" title="Segna come completato" onclick="event.stopPropagation();completeFilm('${film.id}')">✓</button>
+          <button class="series-card-overlay-btn" title="Modifica" onclick="event.stopPropagation();openEditFilmModal('${film.id}')">✎</button>
+        </div>
+      </div>
+      <div class="series-card-bottom" onclick="openFilmDetail('${film.id}')">
+        <div class="series-card-title">${film.title}</div>
+        ${noteTagHtml ? `<div class="series-card-tagrow">${noteTagHtml}</div>` : ''}
+      </div>
+    </div>`;
+}
+
 // ---- FILM DETAIL POPUP (stesso popup delle serie, riusa #seriesDetailOverlay) ----
 function openFilmDetail(id){
   const inCompleted = (db.filmsCompleted||[]).some(f=>f.id===id);
@@ -3824,6 +4852,51 @@ function openFilmDetail(id){
        <button class="btn btn-sm" onclick="closeSeriesDetail();removeFilm('${film.id}')" style="background:var(--red);border:none;box-shadow:0 4px 12px rgba(255,59,74,0.35);flex:0 0 auto;">✕</button>`;
 
   document.getElementById('seriesDetailOverlay').classList.add('open');
+}
+
+// ---- ANIME FRANCHISE FILMS MODAL — mostra tutte le card "classiche" dei film di una saga anime ----
+function openAnimeFranchiseModal(fsId){
+  const allSeriesMap2 = {};
+  (db.filmSeries||[]).forEach(s=>{ allSeriesMap2[s.id]=s; });
+  getAnimeSagas().forEach(s=>{ if(!allSeriesMap2[s.id]) allSeriesMap2[s.id]=s; });
+  const saga = allSeriesMap2[fsId];
+  const fsName = saga ? saga.title : (findAnySeriesTitleById(fsId) || 'Saga rimossa');
+
+  const completedFilmIds2 = new Set((db.filmsCompleted||[]).map(f=>f.id));
+  const allSagaFilms = [...(db.films||[]), ...(db.filmsCompleted||[])]
+    .filter(f=>f.seriesId===fsId)
+    .sort((a,b)=>(a.seriesOrder||999)-(b.seriesOrder||999));
+  const totalSagaFilms = allSagaFilms.length;
+  const seenCount = allSagaFilms.filter(f=>completedFilmIds2.has(f.id)).length;
+
+  let roadmapTag = '';
+  const rmEntry = db.roadmap.find(r=>r.id===fsId);
+  if(rmEntry){
+    const rmPos = db.roadmap.findIndex(r=>r.id===rmEntry.id)+1;
+    roadmapTag = `<span class="film-franchise-roadmap-tag">▶ N°${rmPos}</span>`;
+  }
+  let completedSeriesTag = '';
+  if(!rmEntry && db.completed.some(r=>r.id===fsId)){
+    completedSeriesTag = `<span class="film-franchise-completed-tag">Serie ✓</span>`;
+  }
+  const seenTag = seenCount > 0 ? `<span class="film-franchise-seen-tag">✓ ${seenCount} visti</span>` : '';
+  const countTag = `<span class="film-franchise-count">${totalSagaFilms} Film</span>`;
+
+  document.getElementById('ffTags').innerHTML = countTag + roadmapTag + completedSeriesTag + seenTag;
+  document.getElementById('ffTitle').textContent = fsName;
+  document.getElementById('ffGrid').innerHTML = allSagaFilms.length
+    ? allSagaFilms.map((f,i)=>buildFilmCardHTML(f,i)).join('')
+    : `<div class="empty" style="grid-column:1/-1;">Nessun film in questa saga</div>`;
+
+  document.getElementById('franchiseFilmsOverlay').classList.add('open');
+}
+
+function closeAnimeFranchiseModal(){
+  document.getElementById('franchiseFilmsOverlay').classList.remove('open');
+}
+
+function handleFranchiseFilmsOverlayClick(e){
+  if(e.target===document.getElementById('franchiseFilmsOverlay')) closeAnimeFranchiseModal();
 }
 
 // Cambia rapidamente SUB/DUB su un film, sia in catalogo che tra i completati
@@ -3955,42 +5028,79 @@ function renderFilms(){
     return rank(a) - rank(b);
   });
 
-  function buildFranchiseBlockHTML(fsId){
-    const fsFilms = byFranchise[fsId];
-    if(!fsFilms) return '';
-    const saga = allSeriesMap[fsId];
-    const fsName = saga ? saga.title : (findAnySeriesTitleById(fsId) || 'Saga rimossa');
+  // Tag informativi comuni a entrambi i tipi di saga (visti / roadmap / serie completata)
+  function buildSagaTags(fsId, fsFilms){
     const allSagaFilms = [...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===fsId);
     const totalSagaFilms = allSagaFilms.length;
-
-    // "X visti" tag: saga with >1 film, some completed
     const seenCount = allSagaFilms.filter(f=>completedFilmIds.has(f.id)).length;
     const seenTag = (totalSagaFilms > 1 && seenCount > 0) ? `<span class="film-franchise-seen-tag">✓ ${seenCount} visti</span>` : '';
-
-    // "In roadmap #N" tag: check if any series in roadmap matches this saga
     let roadmapTag = '';
     const rmEntry = db.roadmap.find(r => r.id === fsId);
     if(rmEntry){
       const rmPos = db.roadmap.findIndex(r=>r.id===rmEntry.id)+1;
       roadmapTag = `<span class="film-franchise-roadmap-tag">▶ N°${rmPos}</span>`;
     }
-    // "Serie ✓" tag: la serie anime collegata a questa saga è stata completata
     let completedSeriesTag = '';
     if(!rmEntry && db.completed.some(r => r.id === fsId)){
       completedSeriesTag = `<span class="film-franchise-completed-tag">Serie ✓</span>`;
     }
-    // Film list tooltip removed from catalog header
-    return `<div class="film-franchise-block collapsed" id="franchise-block-${fsId}">
-      <div class="film-franchise-header" onclick="toggleFranchiseCollapse('${fsId}')">
-        <span class="film-franchise-name">${fsName}</span>
+    return { seenTag, roadmapTag, completedSeriesTag };
+  }
+
+  // Collezione Film (saghe di film puri, non legate ad anime): vista a schede,
+  // con un section-label per ogni saga (niente più header a scomparsa/collassabile)
+  function buildFilmSagaCardBlockHTML(fsId){
+    const fsFilms = byFranchise[fsId];
+    if(!fsFilms) return '';
+    const saga = allSeriesMap[fsId];
+    const fsName = saga ? saga.title : (findAnySeriesTitleById(fsId) || 'Saga rimossa');
+    const { seenTag, roadmapTag, completedSeriesTag } = buildSagaTags(fsId, fsFilms);
+    return `<div class="film-saga-block" id="franchise-block-${fsId}">
+      <div class="film-saga-label">
+        <span>${fsName}</span>
         ${seenTag}
         ${roadmapTag}
         ${completedSeriesTag}
         <span class="film-franchise-count">${fsFilms.length} Film</span>
-        <span class="film-franchise-collapse-icon">▾</span>
       </div>
-      <div class="film-franchise-list">
-        ${fsFilms.map((f,i)=>buildFilmItemHTML(f,i)).join('')}
+      <div class="saga-cards-grid">
+        ${fsFilms.map((f,i)=>buildFilmCardHTML(f,i)).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Collezione Serie (saghe di film legate ad un anime): ogni saga è rappresentata
+  // da UNA sola card riepilogativa (poster dell'anime, titolo, N° film totale,
+  // N° già visti, posizione in roadmap), uniforme con le altre card della griglia.
+  // Cliccandoci sopra si apre un popup con tutte le card "classiche" dei film di
+  // quella saga, con tutte le azioni già disponibili sulle altre card.
+  function buildAnimeFranchiseCardHTML(fsId, idx){
+    const fsFilms = byFranchise[fsId];
+    if(!fsFilms) return '';
+    const saga = allSeriesMap[fsId];
+    const fsName = saga ? saga.title : (findAnySeriesTitleById(fsId) || 'Saga rimossa');
+    const posterSrc = saga && saga.image ? saga.image : '';
+    const { seenTag, roadmapTag, completedSeriesTag } = buildSagaTags(fsId, fsFilms);
+    const allSagaFilms = [...(db.films||[]), ...(db.filmsCompleted||[])].filter(f=>f.seriesId===fsId);
+    const totalSagaFilms = allSagaFilms.length;
+
+    const imgHtml = posterSrc
+      ? `<img class="series-card-poster" src="${escAttr(posterSrc)}" alt="${escAttr(fsName)}" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
+      : `<div class="series-card-noimg">🎬</div>`;
+
+    return `
+    <div class="series-card anime-franchise-card" style="animation:itemIn .2s ${staggerDelay(idx,0.02,0.3)}s both;cursor:pointer;" id="franchise-block-${fsId}" onclick="openAnimeFranchiseModal('${fsId}')">
+      <div class="series-card-poster-wrap">
+        ${imgHtml}
+        <span class="series-card-corner tag-film">${totalSagaFilms} film</span>
+      </div>
+      <div class="series-card-bottom">
+        <div class="series-card-title">${fsName}</div>
+        <div class="series-card-tagrow">
+          ${roadmapTag}
+          ${completedSeriesTag}
+          ${seenTag}
+        </div>
       </div>
     </div>`;
   }
@@ -3999,23 +5109,30 @@ function renderFilms(){
   if(filmSagaIds.length){
     html += `<div class="film-group" id="film-group-collezionefilm">
       <div class="section-label">Collezione Film</div>
-      ${filmSagaIds.map(buildFranchiseBlockHTML).join('')}
+      ${filmSagaIds.map(buildFilmSagaCardBlockHTML).join('')}
     </div>`;
   }
 
   // Gruppo: Collezione Serie (saghe di film legate ad un anime)
+  // Le singole saghe non occupano più una riga intera ciascuna: vengono affiancate
+  // in un contenitore flex-wrap, così più collezioni piccole condividono la stessa riga
+  // (come nello stand-alone), ma le card di ogni collezione restano unite nel loro blocco.
   if(animeSagaIds.length){
     html += `<div class="film-group" id="film-group-collezioneserie">
       <div class="section-label">Collezione Serie</div>
-      ${animeSagaIds.map(buildFranchiseBlockHTML).join('')}
+      <div class="series-cards-grid">
+        ${animeSagaIds.map(buildAnimeFranchiseCardHTML).join('')}
+      </div>
     </div>`;
   }
 
-  // Standalone block
+  // Standalone block: vista a schede con poster, come le serie
   if(standalone.length){
     html += `<div class="film-standalone-block">
       <div class="film-standalone-header">Stand-alone</div>
-      ${standalone.map((f,i)=>buildFilmItemHTML(f,i)).join('')}
+      <div class="series-cards-grid">
+        ${standalone.map((f,i)=>buildFilmCardHTML(f,i)).join('')}
+      </div>
     </div>`;
   }
 
@@ -4026,11 +5143,6 @@ function renderFilms(){
    const c = document.getElementById('film-catalog-container');
    if(c) c.innerHTML = `<div class="empty">Errore nel caricamento dei film</div>`;
  }
-}
-
-function toggleFranchiseCollapse(fsId){
-  const block = document.getElementById(`franchise-block-${fsId}`);
-  if(block) block.classList.toggle('collapsed');
 }
 
 function renderFilmsCompletedInto(searchId, sortId, containerId, countId, dubCountId, subCountId){
@@ -4107,9 +5219,15 @@ function renderFilmsCompleted(){
 
 // ---- NOTES TOOLTIP ----
 const _rmTooltipEl = document.getElementById('rm-tooltip-global');
+// Tiene traccia della posizione del cursore per poter riposizionare il tooltip
+// durante lo scroll (il mouse non genera eventi mentre la pagina scorre).
+let _lastMouseX = 0, _lastMouseY = 0;
+document.addEventListener('mousemove', e => { _lastMouseX = e.clientX; _lastMouseY = e.clientY; });
+let _rmTooltipScrollHideTimer = null;
 function showRmTooltip(badge){
   const text = badge.dataset.tooltip;
   if(!text) return;
+  clearTimeout(_rmTooltipScrollHideTimer);
   badge.classList.add('hovered');
   _rmTooltipEl.textContent = text;
   // Measure tooltip width after setting content, before positioning
@@ -4151,20 +5269,40 @@ function showRmTooltip(badge){
   _rmTooltipEl.style.setProperty('--arrow-left', arrowLeft + 'px');
 }
 function hideRmTooltip(){
+  clearTimeout(_rmTooltipScrollHideTimer);
   _rmTooltipEl.classList.remove('visible','above');
   _rmTooltipEl.style.display = '';
   _rmTooltipEl.style.visibility = '';
-  document.querySelectorAll('.rm-notes-badge.hovered').forEach(b=>b.classList.remove('hovered'));
+  document.querySelectorAll('.rm-notes-badge.hovered, .series-card-corner.hovered').forEach(b=>b.classList.remove('hovered'));
 }
+// Se si scrolla mentre il tooltip è aperto, lo si tiene visibile sotto al
+// cursore per un paio di secondi (il mouse potrebbe non essere più sopra
+// l'elemento che lo aveva aperto, dato che è la pagina a essersi mossa).
+window.addEventListener('scroll', function(){
+  if(!_rmTooltipEl.classList.contains('visible')) return;
+  const tw = Math.min(_rmTooltipEl.offsetWidth, 340);
+  const th = _rmTooltipEl.offsetHeight;
+  const vw = window.innerWidth, vh = window.innerHeight, margin = 8;
+  let left = _lastMouseX + 16;
+  if(left + tw > vw - margin) left = vw - tw - margin;
+  if(left < margin) left = margin;
+  let top = _lastMouseY + 16;
+  if(top + th > vh - margin) top = _lastMouseY - th - 16;
+  _rmTooltipEl.style.left = left + 'px';
+  _rmTooltipEl.style.top = top + 'px';
+  clearTimeout(_rmTooltipScrollHideTimer);
+  _rmTooltipScrollHideTimer = setTimeout(hideRmTooltip, 2000);
+}, true);
 
 // ---- INIT ----
 loadTheme();
+loadPureBlackBg();
 loadLocal();
 if(!db.films) db.films=[];
 if(!db.filmsCompleted) db.filmsCompleted=[];
 if(!db.filmSeries) db.filmSeries=[];
 renderAll();
-syncPull();
+syncPull(true); // primo avvio: unico pull completo necessario per allinearsi a Firebase
 startSyncPoll();
 </script>
 </body>
