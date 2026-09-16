@@ -1478,7 +1478,7 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accentGlow);
 }
-.sort-select {
+. {
   height: 42px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1489,7 +1489,7 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
   cursor: pointer; outline: none;
   transition: border-color 0.2s;
 }
-.sort-select:focus { border-color: var(--accent); }
+.:focus { border-color: var(--accent); }
 
 /* ===== SECTION LABEL ===== */
 .section-label {
@@ -2447,10 +2447,10 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
           </div>
         </div>
         <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
-          <option value="eps">ep ↑</option>
+          <option value="recent">Recenti</option>
           <option value="title">A–Z</option>
           <option value="za">Z–A</option>
-          <option value="recent">Recenti</option>
+          <option value="eps">ep ↑</option>
         </select>
       </div>
       <div class="stats-bar" id="catalogStats" style="margin-bottom:0.8rem;"><span class="ep-filter-badge" id="epFilterBadge"></span></div>
@@ -2482,8 +2482,8 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
     <div class="search-row search-row-compact" style="margin-bottom:0.75rem">
       <input class="search-input" type="text" placeholder="Cerca nei film…" id="filmSearch" oninput="renderFilms()">
       <select class="sort-select" id="filmSort" onchange="renderFilms()">
-        <option value="title">A–Z</option>
         <option value="recent">Recenti</option>
+        <option value="title">A–Z</option>
       </select>
       <select class="sort-select" id="filmTypeFilter" onchange="renderFilms()">
         <option value="all">Tutti</option>
