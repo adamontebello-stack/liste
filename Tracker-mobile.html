@@ -4785,7 +4785,7 @@ function buildRmItemHTML(r, i){
       <div class="rm-name">${r.title}${alertBadge}</div>
       <div class="rm-meta">${r.eps} ep${filmsTag}${_notes ? ' · ' : ''}${notesTooltip}</div>
     </div>
-    ${r.status==='watching'?`<div class="watching-tag">watching</div>`:''}
+    <!-- ${r.status==='watching'?`<div class="watching-tag">watching</div>`:''} -->
     ${r.status==='watching'?`<div class="rm-ep-wrap"><div class="rm-ep-display">${r.currentEp||0}/${r.eps} • ${pct}%</div></div>`:''}
     <span class="badge ${r.type.toLowerCase()}">${r.type}</span>
     <div class="reorder-btns">
