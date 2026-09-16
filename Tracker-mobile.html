@@ -4820,7 +4820,7 @@ function syncEpUI(id,item){
     const pctEl=node.querySelector('.ep-pct');
     const pct=Math.round(item.currentEp/item.eps*100);
     if(fill) fill.style.width=pct+'%';
-    if(disp) disp.textContent=`${item.currentEp||0}/${item.eps}`;
+    if(disp) disp.textContent=`${item.currentEp||0}/${item.eps} • ${pct}%`;
     if(pctEl) pctEl.textContent=pct+'%';
   }
   if(_detailSeriesId===id){
