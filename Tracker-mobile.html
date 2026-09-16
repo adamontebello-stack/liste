@@ -4666,9 +4666,9 @@ function buildCardHTML(s, i){
         <div class="series-card-title">${s.title}</div>
         ${notesHtml}
         <div class="series-card-meta">
+          <span class="series-card-eps">${s.eps} ep</span>
           <span class="series-card-type-badge ${typeCls}">${s.type}</span>
           ${filmBadgeHtml}
-          <span class="series-card-eps">${s.eps} ep</span>
           <button class="series-card-fav ${s.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${s.id}')" title="Preferito">★</button>
         </div>
       </div>
