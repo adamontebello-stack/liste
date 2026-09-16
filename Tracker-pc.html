@@ -2877,7 +2877,7 @@ body.perf .bottom-nav-indicator {
     <div class="edit-modal-title">Nuova serie</div>
     <span class="edit-label">Titolo</span>
     <div class="imdb-search-wrap">
-      <input class="edit-field" id="title" placeholder="Nome serie" autocomplete="off" oninput="handleImdbTitleInput(this,'imdbSearchResults','imdbId')">
+      <input class="edit-field" id="title" placeholder="Nome serie" autocomplete="off" oninput="handleImdbTitleInput(this,'imdbSearchResults','imdbId','series','title')">
       <div class="imdb-search-results" id="imdbSearchResults"></div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -2891,10 +2891,11 @@ body.perf .bottom-nav-indicator {
       </div>
       <div style="flex:1">
         <span class="edit-label">Tipo</span>
-        <select class="edit-field" id="type">
-          <option value="DUB">DUB</option>
-          <option value="SUB">SUB</option>
-        </select>
+        <div class="modal-check-row dub-check checked" id="typeCheckRow" onclick="toggleSeriesTypeSquare()" style="margin-bottom:0;height:38px;">
+          <span class="modal-check-box" id="typeCheckBox">✓</span>
+          <span class="modal-check-lbl">DUB</span>
+        </div>
+        <input type="hidden" id="type" value="DUB">
       </div>
     </div>
     <span class="edit-label" style="margin-top:6px;display:block;">Codice IMDB (per poster, vista schede) — compilato automaticamente scrivendo il titolo sopra</span>
@@ -2918,7 +2919,7 @@ body.perf .bottom-nav-indicator {
     <div class="edit-modal-title">Aggiungi film</div>
     <span class="edit-label">Titolo film</span>
     <div class="imdb-search-wrap">
-      <input class="edit-field" id="filmTitle" placeholder="Titolo del film" autocomplete="off" oninput="handleImdbTitleInput(this,'filmImdbSearchResults','filmImdbId')">
+      <input class="edit-field" id="filmTitle" placeholder="Titolo del film" autocomplete="off" oninput="handleImdbTitleInput(this,'filmImdbSearchResults','filmImdbId','movie','filmTitle')">
       <div class="imdb-search-results" id="filmImdbSearchResults"></div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -2960,7 +2961,7 @@ body.perf .bottom-nav-indicator {
     <div class="edit-modal-title">Modifica film</div>
     <span class="edit-label">Titolo film</span>
     <div class="imdb-search-wrap">
-      <input class="edit-field" id="editFilmTitle" placeholder="Titolo del film" autocomplete="off" oninput="handleImdbTitleInput(this,'editFilmImdbSearchResults','editFilmImdbId')">
+      <input class="edit-field" id="editFilmTitle" placeholder="Titolo del film" autocomplete="off" oninput="handleImdbTitleInput(this,'editFilmImdbSearchResults','editFilmImdbId','movie','editFilmTitle')">
       <div class="imdb-search-results" id="editFilmImdbSearchResults"></div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -3019,7 +3020,7 @@ body.perf .bottom-nav-indicator {
     <div class="edit-modal-title">Modifica voce</div>
     <span class="edit-label">Titolo</span>
     <div class="imdb-search-wrap">
-      <input class="edit-field" id="editModalTitle" placeholder="Titolo serie" oninput="handleImdbTitleInput(this,'editModalImdbSearchResults','editModalImdbId')">
+      <input class="edit-field" id="editModalTitle" placeholder="Titolo serie" oninput="handleImdbTitleInput(this,'editModalImdbSearchResults','editModalImdbId','series','editModalTitle')">
       <div class="imdb-search-results" id="editModalImdbSearchResults"></div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -3033,10 +3034,11 @@ body.perf .bottom-nav-indicator {
       </div>
       <div style="flex:1">
         <span class="edit-label">Tipo</span>
-        <select class="edit-field" id="editModalType">
-          <option value="DUB">DUB</option>
-          <option value="SUB">SUB</option>
-        </select>
+        <div class="modal-check-row dub-check checked" id="editModalTypeCheckRow" onclick="toggleEditModalTypeSquare()" style="margin-bottom:0;height:38px;">
+          <span class="modal-check-box" id="editModalTypeCheckBox">✓</span>
+          <span class="modal-check-lbl">DUB</span>
+        </div>
+        <input type="hidden" id="editModalType" value="DUB">
       </div>
     </div>
     <span class="edit-label">Codice IMDB (per poster, vista schede) — compilato automaticamente scrivendo il titolo sopra</span>
@@ -3315,16 +3317,16 @@ let _imdbSearchAbort = null;
 const _imdbSearchCache = new Map(); // query -> risultato, evita richieste di rete ripetute
 const _OMDB_FIXED_API_KEY = 'df0673f0';
 function _getOmdbApiKey(){ return _OMDB_FIXED_API_KEY; }
-function handleImdbTitleInput(inputEl, resultsId, imdbFieldId){
+function handleImdbTitleInput(inputEl, resultsId, imdbFieldId, mediaType, titleFieldId){
   const resultsEl = document.getElementById(resultsId);
   if(!resultsEl) return;
   clearTimeout(_imdbSearchTimer);
   const q = inputEl.value.trim();
   if(q.length < 2){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; return; }
-  if(!_getOmdbApiKey()){ _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId); return; }
-  _imdbSearchTimer = setTimeout(()=>_runImdbSearch(q, resultsEl, imdbFieldId), 350);
+  if(!_getOmdbApiKey()){ _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId, mediaType, titleFieldId); return; }
+  _imdbSearchTimer = setTimeout(()=>_runImdbSearch(q, resultsEl, imdbFieldId, mediaType, titleFieldId), 350);
 }
-function _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId){
+function _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId, mediaType, titleFieldId){
   resultsEl.classList.add('open');
   resultsEl.innerHTML = `
     <div class="imdb-search-status" style="text-align:left;line-height:1.5;">
@@ -3332,30 +3334,28 @@ function _renderOmdbKeyPrompt(resultsEl, resultsId, imdbFieldId){
       <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener" style="color:var(--accent2);">Ottienila qui</a>, poi incollala sotto:
       <div style="display:flex;gap:6px;margin-top:8px;">
         <input class="edit-field" id="_omdbKeyInput" placeholder="Incolla qui la chiave API" style="margin:0;flex:1;font-size:0.78rem;padding:8px 10px;" autocomplete="off">
-        <button class="edit-save-btn" style="flex-shrink:0;padding:8px 12px;font-size:0.78rem;" onclick="_saveOmdbApiKey('${resultsId}','${imdbFieldId}')">Salva</button>
+        <button class="edit-save-btn" style="flex-shrink:0;padding:8px 12px;font-size:0.78rem;" onclick="_saveOmdbApiKey('${resultsId}','${imdbFieldId}','${mediaType}','${titleFieldId}')">Salva</button>
       </div>
     </div>`;
-  setTimeout(()=>{ const i=document.getElementById('_omdbKeyInput'); if(i){ i.focus(); i.addEventListener('keydown', e=>{ if(e.key==='Enter') _saveOmdbApiKey(resultsId, imdbFieldId); }); } }, 30);
+  setTimeout(()=>{ const i=document.getElementById('_omdbKeyInput'); if(i){ i.focus(); i.addEventListener('keydown', e=>{ if(e.key==='Enter') _saveOmdbApiKey(resultsId, imdbFieldId, mediaType, titleFieldId); }); } }, 30);
 }
-function _saveOmdbApiKey(resultsId, imdbFieldId){
+function _saveOmdbApiKey(resultsId, imdbFieldId, mediaType, titleFieldId){
   const input = document.getElementById('_omdbKeyInput');
   const key = input ? input.value.trim() : '';
   if(!key){ toast('Inserisci una chiave valida','error'); return; }
   localStorage.setItem('st_omdbApiKey', key);
   toast('Chiave OMDb salvata','success');
   const resultsEl = document.getElementById(resultsId);
-  const _titleFieldMap = { editModalImdbSearchResults:'editModalTitle', filmImdbSearchResults:'filmTitle', editFilmImdbSearchResults:'editFilmTitle' };
-  const titleFieldId = _titleFieldMap[resultsId] || 'title';
   const titleEl = document.getElementById(titleFieldId);
   const q = titleEl ? titleEl.value.trim() : '';
-  if(q.length >= 2 && resultsEl){ _runImdbSearch(q, resultsEl, imdbFieldId); }
+  if(q.length >= 2 && resultsEl){ _runImdbSearch(q, resultsEl, imdbFieldId, mediaType, titleFieldId); }
   else if(resultsEl){ resultsEl.classList.remove('open'); resultsEl.innerHTML=''; }
 }
-async function _runImdbSearch(q, resultsEl, imdbFieldId){
+async function _runImdbSearch(q, resultsEl, imdbFieldId, mediaType, titleFieldId){
   resultsEl.classList.add('open');
-  const cacheKey = q.trim().toLowerCase();
+  const cacheKey = mediaType+'::'+q.trim().toLowerCase();
   if(_imdbSearchCache.has(cacheKey)){
-    _renderImdbResults(_imdbSearchCache.get(cacheKey), resultsEl, imdbFieldId);
+    _renderImdbResults(_imdbSearchCache.get(cacheKey), resultsEl, imdbFieldId, titleFieldId);
     return;
   }
   resultsEl.innerHTML = `<div class="imdb-search-status">Cerco su IMDB…</div>`;
@@ -3363,7 +3363,8 @@ async function _runImdbSearch(q, resultsEl, imdbFieldId){
     if(_imdbSearchAbort) _imdbSearchAbort.abort();
     _imdbSearchAbort = new AbortController();
     const key = _getOmdbApiKey();
-    const url = `https://www.omdbapi.com/?apikey=${encodeURIComponent(key)}&s=${encodeURIComponent(q.trim())}`;
+    const typeParam = mediaType ? `&type=${encodeURIComponent(mediaType)}` : '';
+    const url = `https://www.omdbapi.com/?apikey=${encodeURIComponent(key)}&s=${encodeURIComponent(q.trim())}${typeParam}`;
     const res = await fetch(url, { signal: _imdbSearchAbort.signal });
     if(!res.ok) throw new Error('http '+res.status);
     const data = await res.json();
@@ -3379,18 +3380,19 @@ async function _runImdbSearch(q, resultsEl, imdbFieldId){
     }
     const items = data.Search||[];
     _imdbSearchCache.set(cacheKey, items);
-    _renderImdbResults(items, resultsEl, imdbFieldId);
+    _renderImdbResults(items, resultsEl, imdbFieldId, titleFieldId);
   }catch(err){
     if(err.name === 'AbortError') return;
     resultsEl.innerHTML = `<div class="imdb-search-status">Ricerca non disponibile (nessuna connessione). Inserisci il codice manualmente.</div>`;
   }
 }
-function _renderImdbResults(items, resultsEl, imdbFieldId){
+function _renderImdbResults(items, resultsEl, imdbFieldId, titleFieldId){
     if(!items.length){
       resultsEl.innerHTML = `<div class="imdb-search-status">Nessun risultato su IMDB</div>`;
       return;
     }
-    resultsEl.innerHTML = items.slice(0,8).map(it=>{
+    const shown = items.slice(0,8);
+    resultsEl.innerHTML = shown.map(it=>{
       const poster = it.Poster && it.Poster!=='N/A' ? it.Poster : '';
       const year = it.Year || '';
       const typeLbl = it.Type==='movie' ? 'Film' : (it.Type==='series' ? 'Serie TV' : (it.Type==='episode' ? 'Episodio' : (it.Type||'')));
@@ -3403,13 +3405,16 @@ function _renderImdbResults(items, resultsEl, imdbFieldId){
         </div>
       </div>`;
     }).join('');
-    resultsEl.querySelectorAll('.imdb-search-item').forEach(el=>{
+    resultsEl.querySelectorAll('.imdb-search-item').forEach((el, idx)=>{
+      const it = shown[idx];
       el.addEventListener('click', ()=>{
         const field = document.getElementById(imdbFieldId);
-        if(field) field.value = el.dataset.id;
+        if(field) field.value = it.imdbID;
+        const titleField = titleFieldId ? document.getElementById(titleFieldId) : null;
+        if(titleField) titleField.value = it.Title || '';
         resultsEl.classList.remove('open');
         resultsEl.innerHTML = '';
-        toast('Codice IMDB trovato: '+el.dataset.id, 'success');
+        toast('Codice IMDB trovato: '+it.imdbID, 'success');
       });
     });
 }
@@ -3484,7 +3489,7 @@ function showCompletateTab(event,tab){
 function openAddSeriesModal(){
   // Ripristina ultimo tipo usato
   const lastType = localStorage.getItem('st_lastSeriesType');
-  if(lastType){ const sel=document.getElementById('type'); if(sel) sel.value=lastType; }
+  setFilmTypeSquare('typeCheckRow','type', lastType || 'DUB');
   document.getElementById('addSeriesModal').classList.add('open');
   setTimeout(()=>{ const t=document.getElementById('title'); if(t) t.focus(); },80);
 }
@@ -3521,6 +3526,16 @@ function toggleEditFilmTypeSquare(){
   const hidden = document.getElementById('editFilmType');
   const newType = hidden && hidden.value==='DUB' ? 'SUB' : 'DUB';
   setFilmTypeSquare('editFilmTypeCheckRow','editFilmType',newType);
+}
+function toggleSeriesTypeSquare(){
+  const hidden = document.getElementById('type');
+  const newType = hidden && hidden.value==='DUB' ? 'SUB' : 'DUB';
+  setFilmTypeSquare('typeCheckRow','type',newType);
+}
+function toggleEditModalTypeSquare(){
+  const hidden = document.getElementById('editModalType');
+  const newType = hidden && hidden.value==='DUB' ? 'SUB' : 'DUB';
+  setFilmTypeSquare('editModalTypeCheckRow','editModalType',newType);
 }
 
 // ---- ADD FILM MODAL ----
@@ -3693,8 +3708,7 @@ function openSeriesDetail(id){
     if(f.seriesId === s.id) return true;
     const fs = (db.filmSeries||[]).find(x=>x.id===f.seriesId);
     if(!fs) return false;
-    const st=s.title.toLowerCase(), ft=fs.title.toLowerCase();
-    return st.includes(ft)||ft.includes(st);
+    return _normalizeTitleForMatch(s.title) === _normalizeTitleForMatch(fs.title);
   }).sort((a,b)=>(a.seriesOrder||99)-(b.seriesOrder||99));
 
   if(linked.length){
@@ -4173,7 +4187,7 @@ function openEditModal(id){
   document.getElementById('editModalTitle').value=s.title;
   document.getElementById('editModalEps').value=s.eps;
   document.getElementById('editModalFilms').value=s.films||'';
-  document.getElementById('editModalType').value=s.type||'DUB';
+  setFilmTypeSquare('editModalTypeCheckRow','editModalType', s.type||'DUB');
   document.getElementById('editModalImdbId').value=s.imdbId||'';
   document.getElementById('editModalNotes').value=s.notes||'';
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
@@ -4289,13 +4303,12 @@ function buildRmItemHTML(r, i){
     const allSeriesMap2 = {};
     (db.filmSeries||[]).forEach(s=>{ allSeriesMap2[s.id]=s; });
     // Find films belonging to a saga whose title overlaps with the series title
-    const seriesTitle = (_srcSeries?.title||'').toLowerCase();
+    const seriesTitleNorm = _normalizeTitleForMatch(_srcSeries?.title||'');
     let matchedFilms = allFilms.filter(f=>{
       if(!f.seriesId) return false;
       const saga = allSeriesMap2[f.seriesId];
       if(!saga) return false;
-      const st = saga.title.toLowerCase();
-      return st.includes(seriesTitle) || seriesTitle.includes(st);
+      return _normalizeTitleForMatch(saga.title) === seriesTitleNorm;
     });
     if(!matchedFilms.length) matchedFilms = allFilms.filter(f=>f.seriesId===r.id);
     matchedFilms.sort((a,b)=>(a.seriesOrder||999)-(b.seriesOrder||999));
@@ -4997,6 +5010,20 @@ function getAnimeSagas(){
     }
   });
   return result.sort((a,b)=>a.title.localeCompare(b.title));
+}
+
+// Normalizza un titolo per capire se serie e saga film sono "lo stesso nome":
+// minuscolo, spazi compattati, rimosso un eventuale articolo iniziale (IT/EN).
+// Usato SOLO per il collegamento automatico film<->serie quando manca un
+// seriesId esplicito: confronto per UGUAGLIANZA (non più per sottostringa),
+// così "The Ghost in the Shell" ≈ "Ghost in the Shell" ma NON viene confuso
+// con "Ghost in the Shell Arise" (titolo diverso, saga diversa).
+function _normalizeTitleForMatch(t){
+  return (t||'')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g,' ')
+    .replace(/^(il|lo|la|i|gli|le|un|uno|una|the|a|an)\s+/,'');
 }
 
 // Cerca il titolo di una serie (anime) per id in QUALSIASI lista, anche se
