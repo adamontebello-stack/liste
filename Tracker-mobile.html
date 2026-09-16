@@ -167,7 +167,7 @@ body.theme-amber {
   --noise: none;
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }  /* lo smooth scroll software è una catena di ridisegni */
 
 body {
   background: var(--bg);
@@ -1162,7 +1162,7 @@ main {
 .completed-item:hover::before { background: var(--green); }
 
 .rm-item.watching {
-  background: rgba(232,25,90,0.06);
+  background: var(--surface2);
   border-color: rgba(232,25,90,0.28);
   box-shadow: 0 0 0 1px rgba(232,25,90,0.1), 0 4px 18px rgba(232,25,90,0.08);
 }
@@ -1223,6 +1223,22 @@ main {
 .ep-input::-webkit-outer-spin-button, .ep-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ep-input:focus { color: var(--accent2); outline: none; }
 .ep-total { font-family: 'DM Mono', monospace; font-size: 0.85rem; color: var(--muted2); }
+/* Percentuale di avanzamento */
+.ep-pct {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem; font-weight: 800;
+  color: var(--accent2);
+  background: var(--accentGlow2);
+  border: 1px solid var(--accentGlow);
+  padding: 4px 9px;
+  border-radius: 30px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.rm-ep-wrap {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  flex-shrink: 0;
+}
 
 .rm-actions { display: flex; gap: 6px; opacity: 1; }
 .c-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
@@ -1510,6 +1526,113 @@ main {
   50%      { box-shadow: 0 0 0 2px #2ee8a5, 0 0 10px 2px rgba(46,232,165,0.55); }
 }
 
+/* ===== POSTER TAP → LIGHTBOX (mobile/touch) =====
+   Sul touch l'hover non esiste: l'overlay scuro con i due pulsanti restava
+   inutilizzabile. Ora il tap sul poster apre il poster ingrandito, con le
+   stesse due azioni sotto l'immagine. */
+.series-card-poster-wrap { cursor: zoom-in; -webkit-tap-highlight-color: transparent; }
+.series-card-poster-overlay { display: none !important; }
+
+.poster-lightbox {
+  position: fixed; inset: 0;
+  z-index: 900;
+  display: none;
+  align-items: center; justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: rgba(0,0,0,0.9);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.poster-lightbox.open { display: flex; animation: fadeIn 0.18s ease; }
+.pl-img {
+  width: min(78vw, 340px);
+  aspect-ratio: 2 / 3;           /* poster originali 500x750 */
+  max-height: 62vh;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid var(--border2);
+  box-shadow: 0 26px 60px rgba(0,0,0,0.7), 0 0 40px var(--accentGlow);
+  animation: modalSlide 0.24s cubic-bezier(0.34,1.4,0.64,1);
+  background: linear-gradient(135deg, var(--surface2), var(--surface3));
+}
+.pl-title {
+  font-size: 0.95rem; font-weight: 800; color: #fff;
+  text-align: center; max-width: min(80vw, 340px); line-height: 1.3;
+}
+.pl-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.pl-action {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px; border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border2);
+  color: #fff; font-size: 0.8rem; font-weight: 700;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.pl-action:active { transform: scale(0.96); }
+.pl-action.accent { background: var(--accent); border-color: var(--accent); }
+.pl-hint { font-size: 0.66rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ===== BACKDROP NELLE CARD (stile Trakt) =====
+   Il backdrop sta nel box a destra del poster, sfumato da destra verso sinistra:
+   a sinistra (dove c'è il testo) sparisce del tutto, a destra è pienamente visibile. */
+.scb-backdrop {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover;
+  background-position: center right;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.10) 34%, rgba(0,0,0,0.45) 62%, rgba(0,0,0,0.85) 84%, #000 100%);
+          mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.10) 34%, rgba(0,0,0,0.45) 62%, rgba(0,0,0,0.85) 84%, #000 100%);
+}
+.scb-backdrop.loaded { opacity: 0.52; }
+/* Fallback: nessun backdrop reale disponibile, viene usato il poster stesso
+   come texture — sfocato e più tenue per non sembrare un'immagine "sbagliata". */
+.scb-backdrop.fallback { filter: blur(3px) saturate(0.9); transform: scale(1.06); }
+.scb-backdrop.fallback.loaded { opacity: 0.34; }
+body.theme-light .scb-backdrop.loaded { opacity: 0.3; }
+body.theme-light .scb-backdrop.fallback.loaded { opacity: 0.2; }
+.series-card-bottom > *:not(.scb-backdrop) { position: relative; z-index: 1; }
+
+/* ===== BACKDROP NELLE VOCI ROADMAP =====
+   Stessa logica delle card: sfumato da destra (pieno) verso sinistra
+   (trasparente, dove sta il testo). */
+.rm-backdrop {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover;
+  background-position: center right;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 38%, rgba(0,0,0,0.35) 58%, rgba(0,0,0,0.8) 80%, #000 100%);
+          mask-image: linear-gradient(to right, transparent 0%, transparent 38%, rgba(0,0,0,0.35) 58%, rgba(0,0,0,0.8) 80%, #000 100%);
+}
+.rm-backdrop.loaded { opacity: 0.4; }
+.rm-backdrop.fallback { filter: blur(3px) saturate(0.9); transform: scale(1.06); }
+.rm-backdrop.fallback.loaded { opacity: 0.24; }
+body.theme-light .rm-backdrop.loaded { opacity: 0.22; }
+body.theme-light .rm-backdrop.fallback.loaded { opacity: 0.14; }
+.rm-item > *:not(.rm-backdrop) { position: relative; z-index: 1; }
+
+/* ===== SFONDO PAGINA = BACKDROP DI CIÒ CHE STAI GUARDANDO (bianco e nero) ===== */
+#watchingBackdrop {
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center 20%;
+  filter: grayscale(1) contrast(1.08);
+  opacity: 0;
+  transition: opacity 0.7s ease, background-image 0.3s ease;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.15) 94%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.15) 94%, transparent 100%);
+}
+#watchingBackdrop.on { opacity: 0.16; }
+body.theme-light #watchingBackdrop.on { opacity: 0.12; }
+
 .series-card-poster-wrap {
   position: relative;
   width: 76px;
@@ -1581,6 +1704,8 @@ main {
 .series-card-corner.tag-film { right: 4px; background: rgba(45,158,255,0.35); border: 1px solid rgba(45,158,255,0.5); cursor: help; }
 
 .series-card-bottom {
+  position: relative;      /* contiene il backdrop */
+  overflow: hidden;
   flex: 1 1 auto;
   min-width: 0;
   padding: 10px 12px;
@@ -2754,9 +2879,155 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
   text-transform: none;
   letter-spacing: normal;
 }
+
+/* =========================================================================
+   MODALITÀ PRESTAZIONI (attiva di default, disattivabile da Impostazioni)
+   -------------------------------------------------------------------------
+   Senza accelerazione hardware il browser disegna tutto via CPU. Le voci qui
+   sotto sono, in ordine, le più costose in quel contesto:
+     1. backdrop-filter  → obbliga a ri-sfocare ciò che sta dietro ad ogni frame
+     2. animazioni infinite su box-shadow → ridipingono l'area in continuazione
+     3. layer fissi a schermo intero (gradienti orb) → ridisegno ad ogni scroll
+     4. filter: blur() su elementi ripetuti (una card = una sfocatura)
+     5. ombre morbide molto ampie e transition: all
+   Vengono neutralizzate qui, senza toccare le regole originali: basta
+   togliere la classe .perf dal body per riavere tutti gli effetti.
+   ========================================================================= */
+
+body.perf *,
+body.perf *::before,
+body.perf *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Gli elementi "vetro" hanno già var(--surface) opaco sotto al gradiente,
+   quindi senza blur l'aspetto resta praticamente identico. Gli overlay dei
+   modali vengono invece scuriti un po' per restare leggibili. */
+body.perf .modal-overlay,
+body.perf .edit-modal-overlay,
+body.perf .series-detail-overlay,
+body.perf .franchise-modal-overlay,
+body.perf .poster-lightbox {
+  background: rgba(0,0,0,0.9) !important;
+}
+
+/* 2 — Nessuna animazione infinita. L'aura delle serie "in corso" diventa un
+   bordo luminoso statico: stesso segnale visivo, zero ridisegni. */
+body.perf .logo,
+body.perf .watching-tag,
+body.perf .ongoing-tag,
+body.perf .sync-dot.syncing,
+body.perf .series-card,
+body.perf .series-card.is-ongoing,
+body.perf .item,
+body.perf .rm-item,
+body.perf .completed-item,
+body.perf .section.active {
+  animation: none !important;
+}
+body.perf .series-card.is-ongoing {
+  box-shadow: 0 0 0 1.5px rgba(46,232,165,0.6) !important;
+}
+body.perf .item.is-ongoing,
+body.perf .rm-item.is-ongoing {
+  box-shadow: 0 0 0 1px rgba(46,232,165,0.5) !important;
+}
+
+/* 3 — Via i due orb fissi a schermo intero: erano due gradienti radiali di
+   600px ridisegnati ad ogni scroll e per giunta animati. */
+body.perf::before,
+body.perf::after {
+  display: none !important;
+}
+
+/* 5 — Ombre più leggere e transizioni mirate al posto di transition: all */
+body.perf {
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.35);
+  --shadow-glow: none;
+}
+body.perf .series-card,
+body.perf .item,
+body.perf .rm-item,
+body.perf .completed-item,
+body.perf .add-panel,
+body.perf .rm-alert-panel {
+  transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+body.perf .series-card:hover,
+body.perf .item:hover,
+body.perf .rm-item:hover,
+body.perf .completed-item:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--border2) !important;
+}
+body.perf .series-card.is-ongoing:hover {
+  box-shadow: 0 0 0 1.5px rgba(46,232,165,0.6) !important;
+}
+
+/* Liste lunghe: il browser salta il disegno di ciò che è fuori schermo.
+   `auto` in contain-intrinsic-size fa memorizzare l'altezza reale dopo il
+   primo passaggio, quindi la scrollbar non "salta". */
+body.perf .item,
+body.perf .rm-item,
+body.perf .completed-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}
+body.perf .series-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+
+/* Scroll istantaneo: lo smooth scroll software è una sequenza di ridisegni */
+body.perf { scroll-behavior: auto; }
+
+/* Glow testuali e brightness in hover: piccoli ma moltiplicati per ogni riga */
+body.perf .series-card-fav.active,
+body.perf .item-fav.active { text-shadow: none !important; }
+body.perf .type-toggle-badge { transition: none !important; }
+body.perf .type-toggle-badge:hover { filter: none !important; transform: none !important; }
+
+/* 4 — I backdrop delle card: niente sfocatura per-card (era un blur per ogni
+   riga visibile). Il fallback resta riconoscibile abbassando l'opacità. */
+body.perf .scb-backdrop, body.perf .rm-backdrop { filter: none !important; transform: none !important; }
+body.perf .scb-backdrop.fallback.loaded { opacity: 0.22; }
+body.perf .rm-backdrop.fallback.loaded { opacity: 0.16; }
+
+/* Lo sfondo "watching" resta fixed anche in modalità prestazioni: deve
+   restare fermo durante lo scroll per scelta di design. */
+
+/* Elementi fissi (header, bottom-nav, FAB): restano a schermo mentre si
+   scrolla, quindi ogni loro ombra morbida viene ricalcolata di continuo. */
+body.perf .bottom-nav,
+body.perf .top-actions .action-btn,
+body.perf .top-actions .settings-toggle-btn.icon-btn,
+body.perf .round-fab,
+body.perf .roadmap-quickpick,
+body.perf .center-toggle-group,
+body.perf header {
+  box-shadow: var(--shadow-sm) !important;
+}
+body.perf .bottom-nav-indicator {
+  box-shadow: none !important;
+  transition: transform 0.25s ease, width 0.25s ease !important;
+}
+
 </style>
 </head>
-<body class="theme-dark">
+<body class="theme-dark perf">
+
+<!-- Sfondo pagina: backdrop in bianco e nero della serie/film attualmente in visione -->
+<div id="watchingBackdrop"></div>
+
+<!-- Poster ingrandito (tap sul poster di una card) -->
+<div class="poster-lightbox" id="posterLightbox" onclick="closePosterLightbox(event)">
+  <img class="pl-img" id="plImg" alt="" onclick="event.stopPropagation()">
+  <div class="pl-title" id="plTitle"></div>
+  <div class="pl-actions" id="plActions" onclick="event.stopPropagation()"></div>
+  <div class="pl-hint">Tocca fuori per chiudere</div>
+</div>
 
 <div class="top-actions">
   <button id="themeBtn" class="action-btn icon-btn" onclick="cycleTheme()" title="Cambia tema">
@@ -2793,6 +3064,17 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
         <span>Sfondo pagina nero puro</span>
         <div class="settings-switch on" id="pureBlackToggle" onclick="togglePureBlackBg()"></div>
       </div>
+      <div class="settings-toggle-row">
+        <span>Modalità prestazioni</span>
+        <div class="settings-switch on" id="perfToggle" onclick="togglePerfMode()"></div>
+      </div>
+      <div class="settings-toggle-row">
+        <span>Backdrop nelle card</span>
+        <div class="settings-switch on" id="backdropsToggle" onclick="toggleBackdrops()"></div>
+      </div>
+      <button class="settings-item" onclick="askTmdbKey(); closeSettingsMenu();">
+        <span>🖼</span><span>Chiave TMDb (backdrop)</span>
+      </button>
     </div>
   </div>
 </div>
@@ -3286,6 +3568,22 @@ function applyPureBlackBg(active){
   const el = document.getElementById('pureBlackToggle');
   if(el) el.classList.toggle('on', active);
 }
+
+/* ===== MODALITÀ PRESTAZIONI ===== */
+function perfModeEnabled(){ const v = localStorage.getItem('st_perfMode'); return v===null ? true : v==='1'; }
+function applyPerfMode(on){
+  document.body.classList.toggle('perf', on);
+  const el = document.getElementById('perfToggle');
+  if(el) el.classList.toggle('on', on);
+}
+function togglePerfMode(){
+  const next = !perfModeEnabled();
+  localStorage.setItem('st_perfMode', next ? '1':'0');
+  applyPerfMode(next);
+  if(typeof toast==='function') toast(next ? 'Modalità prestazioni attiva' : 'Effetti grafici completi', 'success');
+}
+function loadPerfMode(){ applyPerfMode(perfModeEnabled()); }
+
 function togglePureBlackBg(){
   const current = localStorage.getItem('st_pureBlackBg');
   const isOn = current===null ? true : current==='1';
@@ -3492,7 +3790,7 @@ function _renderImdbResults(items, resultsEl, imdbFieldId){
       const typeLbl = it.Type==='movie' ? 'Film' : (it.Type==='series' ? 'Serie TV' : (it.Type==='episode' ? 'Episodio' : (it.Type||'')));
       const safeTitle = (it.Title||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<div class="imdb-search-item" data-id="${it.imdbID}">
-        ${poster ? `<img src="${poster}" alt="" loading="lazy">` : `<div class="isi-ph"></div>`}
+        ${poster ? `<img src="${poster}" alt="" loading="lazy" decoding="async">` : `<div class="isi-ph"></div>`}
         <div class="isi-info">
           <div class="isi-title">${safeTitle}</div>
           <div class="isi-meta">${[typeLbl, year, it.imdbID].filter(Boolean).join(' · ')}</div>
@@ -3995,11 +4293,248 @@ function renderSortedSeries(list){
   const sort=document.getElementById('catalogSort')?.value||'recent';
   return [...list].sort((a,b)=>{ if(sort==='title') return a.title.localeCompare(b.title); if(sort==='za') return b.title.localeCompare(a.title); if(sort==='recent') return (b.addedAt||0)-(a.addedAt||0); return a.eps-b.eps||a.title.localeCompare(b.title); });
 }
+// Escape sicuro per stringhe inserite dentro onclick="...('...')" (titoli con apostrofi)
+function escJs(str){ return escAttr(String(str==null?'':str).replace(/\\/g,'\\\\').replace(/'/g,"\\'")); }
 function escAttr(str){ return String(str==null?'':str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function imdbPosterUrl(imdbId){
   const id = String(imdbId||'').trim();
   if(!id) return '';
   return `https://btttr.cc/poster-n/imdb/poster-default/${id}.jpg?tag=none`;
+}
+
+/* =========================================================================
+   POSTER LIGHTBOX — tap sul poster di una card
+   ========================================================================= */
+function _plFindRecord(kind, id){
+  if(kind==='film'){
+    const f = (db.films||[]).find(x=>x.id===id) || (db.filmsCompleted||[]).find(x=>x.id===id);
+    if(!f) return null;
+    const done = (db.filmsCompleted||[]).some(x=>x.id===id);
+    return { rec:f, done };
+  }
+  const found = findAnyEntryById(id);
+  return found ? { rec: found.rec, list: found.list } : null;
+}
+function openPosterLightbox(kind, id){
+  const info = _plFindRecord(kind, id);
+  if(!info) return;
+  const rec = info.rec;
+  const src = rec.image || imdbPosterUrl(rec.imdbId);
+  const actions = kind==='film'
+    ? (info.done
+        ? `<button class="pl-action" onclick="closePosterLightbox();openEditFilmModal('${id}')">✎ Modifica</button>`
+        : `<button class="pl-action accent" onclick="closePosterLightbox();completeFilm('${id}')">✓ Completa</button>
+           <button class="pl-action" onclick="closePosterLightbox();openEditFilmModal('${id}')">✎ Modifica</button>`)
+    : `<button class="pl-action accent" onclick="closePosterLightbox();addToRoadmap('${id}')">＋ Roadmap</button>
+       <button class="pl-action" onclick="closePosterLightbox();openEditModal('${id}')">✎ Modifica</button>`;
+  _plShow(src, rec.title||'', actions);
+}
+function openPosterLightboxRaw(src, title){ _plShow(src, title, ''); }
+function _plShow(src, title, actionsHtml){
+  const box = document.getElementById('posterLightbox');
+  const img = document.getElementById('plImg');
+  if(!box || !img) return;
+  img.src = src || '';
+  img.style.display = src ? '' : 'none';
+  document.getElementById('plTitle').textContent = title || '';
+  document.getElementById('plActions').innerHTML = actionsHtml || '';
+  box.classList.add('open');
+}
+function closePosterLightbox(e){
+  if(e && e.target && e.target.id!=='posterLightbox' && !e.target.classList.contains('pl-hint')) return;
+  const box = document.getElementById('posterLightbox');
+  if(box) box.classList.remove('open');
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') { const b=document.getElementById('posterLightbox'); if(b) b.classList.remove('open'); } });
+
+/* =========================================================================
+   BACKDROP (stile Trakt)
+   -------------------------------------------------------------------------
+   Nota: OMDb NON restituisce backdrop, solo il poster verticale. Quindi:
+   - se è salvata una chiave TMDB (gratuita) si usa il vero backdrop 16:9,
+     risolto dall'id IMDB già presente su ogni voce;
+   - altrimenti si usa il poster stesso come texture di sfondo (sfocato e
+     attenuato), così l'effetto c'è comunque senza chiavi aggiuntive.
+   ========================================================================= */
+function _getTmdbKey(){ return (localStorage.getItem('st_tmdbApiKey')||'').trim(); }
+function backdropsEnabled(){ const v=localStorage.getItem('st_backdropsOn'); return v===null ? true : v==='1'; }
+
+let _bdCache = {};
+try { _bdCache = JSON.parse(localStorage.getItem('st_bdCache_v2')||'{}') || {}; } catch(e){ _bdCache = {}; }
+function _bdCacheSave(){ try { localStorage.setItem('st_bdCache_v2', JSON.stringify(_bdCache)); } catch(e){} }
+const _bdPending = {};
+
+// Restituisce {url, fallback} oppure null. Risolve in modo asincrono via TMDB.
+function resolveBackdrop(imdbId){
+  const id = String(imdbId||'').trim();
+  if(!id) return Promise.resolve(null);
+  const key = _getTmdbKey();
+  if(!key){
+    const poster = imdbPosterUrl(id);
+    return Promise.resolve(poster ? { url: poster, fallback: true } : null);
+  }
+  if(Object.prototype.hasOwnProperty.call(_bdCache, id)){
+    const v = _bdCache[id];
+    return Promise.resolve(v ? { url: v, fallback: false } : { url: imdbPosterUrl(id), fallback: true });
+  }
+  if(_bdPending[id]) return _bdPending[id];
+  const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(id)}?api_key=${encodeURIComponent(key)}&external_source=imdb_id`;
+  _bdPending[id] = fetch(url)
+    .then(r=>r.json())
+    .then(d=>{
+      const hit = (d.movie_results&&d.movie_results[0]) || (d.tv_results&&d.tv_results[0]) || null;
+      const path = hit && hit.backdrop_path ? hit.backdrop_path : '';
+      _bdCache[id] = path ? `https://image.tmdb.org/t/p/w1280${path}` : '';
+      _bdCacheSave();
+      return _bdCache[id] ? { url:_bdCache[id], fallback:false } : { url: imdbPosterUrl(id), fallback:true };
+    })
+    .catch(()=>({ url: imdbPosterUrl(id), fallback:true }))
+    .finally(()=>{ delete _bdPending[id]; });
+  return _bdPending[id];
+}
+
+function _paintBackdrop(el, imdbId){
+  el.dataset.bdDone = '1';
+  if(!backdropsEnabled() || !imdbId) return;
+  resolveBackdrop(imdbId).then(res=>{
+    if(!res || !res.url) return;
+    const pre = new Image();
+    pre.onload = ()=>{
+      el.style.backgroundImage = `url("${res.url}")`;
+      el.classList.toggle('fallback', !!res.fallback);
+      el.classList.add('loaded');
+    };
+    pre.src = res.url;
+  });
+}
+
+function applyCardBackdrops(){
+  document.querySelectorAll('.scb-backdrop:not([data-bd-done]), .rm-backdrop:not([data-bd-done])').forEach(el=>{
+    _paintBackdrop(el, el.getAttribute('data-bd'));
+  });
+}
+
+// Sfondo pagina = backdrop (in bianco e nero) della voce in visione più avanti
+// in percentuale (episodi visti / totale) tra TUTTE quelle con stato "watching".
+// Nota: l'immagine può non essere sulla voce di roadmap (viene salvata sulla
+// serie in catalogo), quindi la si recupera anche da db.series/db.completed.
+function _artworkFor(r){
+  let imdbId = String((r && r.imdbId) || '').trim();
+  let image  = String((r && r.image)  || '').trim();
+  if((!imdbId || !image) && r && r.id){
+    const ref = ((typeof db!=='undefined' && db.series)||[]).find(s=>s.id===r.id)
+             || ((typeof db!=='undefined' && db.completed)||[]).find(s=>s.id===r.id)
+             || ((typeof db!=='undefined' && db.dropped)||[]).find(s=>s.id===r.id);
+    if(ref){
+      if(!imdbId) imdbId = String(ref.imdbId||'').trim();
+      if(!image)  image  = String(ref.image ||'').trim();
+    }
+  }
+  if(!image && imdbId) image = imdbPosterUrl(imdbId);
+  return { imdbId, image };
+}
+
+let _wbToken = 0;
+function updateWatchingBackdrop(){
+  const layer = document.getElementById('watchingBackdrop');
+  if(!layer) return;
+  const clear = ()=>{ layer.classList.remove('on'); layer.style.backgroundImage=''; delete layer.dataset.forId; };
+  if(!backdropsEnabled()){ clear(); return; }
+
+  // 1) tutte le voci in visione con una qualsiasi immagine utilizzabile
+  const candidates = ((typeof db!=='undefined' && db.roadmap)||[])
+    .map((r,i)=>{
+      const eps = Number(r && r.eps) || 0;
+      const cur = Number(r && r.currentEp) || 0;
+      return { r, i, pct: eps>0 ? cur/eps : 0, art: _artworkFor(r) };
+    })
+    .filter(o => o.r && o.r.status==='watching' && (o.art.imdbId || o.art.image));
+
+  if(!candidates.length){ clear(); return; }
+
+  // 2) ordina per percentuale (a parità, vince chi viene prima in lista)
+  candidates.sort((a,b)=> (b.pct - a.pct) || (a.i - b.i));
+
+  const winner = candidates[0];
+  const winnerId = String(winner.r.id || winner.i);
+  // già dipinto per questa voce? non rifare nulla (ma se il layer non è attivo, riprova)
+  if(layer.dataset.forId === winnerId && layer.classList.contains('on')) return;
+  layer.dataset.forId = winnerId;
+
+  // 3) prova il vincitore; se la sua immagine non si carica, passa al successivo
+  const token = ++_wbToken;
+  const tryCandidate = (n)=>{
+    if(token !== _wbToken) return;           // una passata più recente ha già preso il controllo
+    if(n >= candidates.length){ if(token===_wbToken){ layer.classList.remove('on'); layer.style.backgroundImage=''; } return; }
+    const c = candidates[n];
+    Promise.resolve(resolveBackdrop(c.art.imdbId)).then(res=>{
+      if(token !== _wbToken) return;
+      const url = (res && res.url) || c.art.image || '';
+      if(!url){ tryCandidate(n+1); return; }
+      const pre = new Image();
+      pre.onload = ()=>{
+        if(token !== _wbToken) return;
+        layer.dataset.forId = String(c.r.id || c.i);
+        layer.style.backgroundImage = `url("${url}")`;
+        layer.classList.add('on');
+      };
+      pre.onerror = ()=>{ tryCandidate(n+1); };
+      pre.src = url;
+    }).catch(()=>tryCandidate(n+1));
+  };
+  tryCandidate(0);
+}
+
+let _bdTimer = null;
+function scheduleBackdropPass(){
+  clearTimeout(_bdTimer);
+  _bdTimer = setTimeout(()=>{
+    const run = ()=>{ applyCardBackdrops(); updateWatchingBackdrop(); };
+    if(window.requestIdleCallback) requestIdleCallback(run, {timeout:800}); else run();
+  }, 200);
+}
+// I render sono sparsi in molte funzioni: un observer copre tutti i casi
+// (catalogo, film, saghe, roadmap) senza doverli agganciare uno per uno.
+document.addEventListener('DOMContentLoaded', ()=>{
+  scheduleBackdropPass();
+  const mo = new MutationObserver(scheduleBackdropPass);
+  mo.observe(document.body, { childList:true, subtree:true });
+});
+
+// --- Impostazioni ---
+function applyBackdropsSetting(on){
+  const el = document.getElementById('backdropsToggle');
+  if(el) el.classList.toggle('on', on);
+  if(!on){
+    document.querySelectorAll('.scb-backdrop, .rm-backdrop').forEach(e=>{ e.classList.remove('loaded'); e.style.backgroundImage=''; });
+    const l = document.getElementById('watchingBackdrop');
+    if(l){ l.classList.remove('on'); l.style.backgroundImage=''; delete l.dataset.forId; }
+  } else {
+    document.querySelectorAll('.scb-backdrop, .rm-backdrop').forEach(e=>{ delete e.dataset.bdDone; });
+    const l = document.getElementById('watchingBackdrop');
+    if(l) delete l.dataset.forId;
+    scheduleBackdropPass();
+  }
+}
+function toggleBackdrops(){
+  const next = !backdropsEnabled();
+  localStorage.setItem('st_backdropsOn', next ? '1':'0');
+  applyBackdropsSetting(next);
+}
+function loadBackdropsSetting(){ applyBackdropsSetting(backdropsEnabled()); }
+function askTmdbKey(){
+  const cur = _getTmdbKey();
+  const k = prompt('Chiave API TMDb (gratuita su themoviedb.org → Impostazioni → API).\nServe per i veri backdrop 16:9; lasciando vuoto si usa il poster come sfondo.', cur);
+  if(k===null) return;
+  const key = k.trim();
+  if(key) localStorage.setItem('st_tmdbApiKey', key);
+  else localStorage.removeItem('st_tmdbApiKey');
+  _bdCache = {}; _bdCacheSave();
+  document.querySelectorAll('.scb-backdrop, .rm-backdrop').forEach(e=>{ delete e.dataset.bdDone; e.classList.remove('loaded'); e.style.backgroundImage=''; });
+  const l = document.getElementById('watchingBackdrop');
+  if(l){ delete l.dataset.forId; l.classList.remove('on'); l.style.backgroundImage=''; }
+  scheduleBackdropPass();
+  if(typeof toast==='function') toast(key ? 'Chiave TMDb salvata' : 'Chiave TMDb rimossa', 'success');
 }
 
 let _catalogViewMode = localStorage.getItem('st_catalogViewMode') || 'cards';
@@ -4037,7 +4572,7 @@ function toggleCatalogFilters(){
 
 function buildCardHTML(s, i){
   const imgHtml = s.image
-    ? `<img class="series-card-poster" src="${escAttr(s.image)}" alt="${escAttr(s.title)}" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
+    ? `<img class="series-card-poster" src="${escAttr(s.image)}" alt="${escAttr(s.title)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
     : `<div class="series-card-noimg">🎬</div>`;
   const typeCls = s.type==='DUB' ? 'dub' : 'sub';
 
@@ -4054,15 +4589,12 @@ function buildCardHTML(s, i){
 
   return `
     <div class="series-card ${s.ongoing ? 'is-ongoing' : ''}" style="animation:itemIn .2s ${staggerDelay(i,0.02,0.3)}s both${s.ongoing ? ', cardOngoingAura 1.3s ease-in-out infinite' : ''};" id="card-${s.id}">
-      <div class="series-card-poster-wrap">
+      <div class="series-card-poster-wrap" onclick="event.stopPropagation();openPosterLightbox('series','${s.id}')">
         ${imgHtml}
         ${ongoingTagHtml}
-        <div class="series-card-poster-overlay">
-          <button class="series-card-overlay-btn" title="Aggiungi a roadmap" onclick="event.stopPropagation();addToRoadmap('${s.id}')">＋</button>
-          <button class="series-card-overlay-btn" title="Modifica" onclick="event.stopPropagation();openEditModal('${s.id}')">✎</button>
-        </div>
       </div>
       <div class="series-card-bottom" onclick="openSeriesDetail('${s.id}')">
+        <div class="scb-backdrop" data-bd="${escAttr(s.imdbId||'')}"></div>
         <div class="series-card-title">${s.title}</div>
         ${notesHtml}
         <div class="series-card-meta">
@@ -4239,12 +4771,13 @@ function buildRmItemHTML(r, i){
   }
   const _image = _srcSeries?.image || '';
   const posterHtml = _image
-    ? `<div class="rm-poster"><img src="${escAttr(_image)}" alt="" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
+    ? `<div class="rm-poster"><img src="${escAttr(_image)}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
     : `<div class="rm-poster"><span class="rm-poster-noimg">🎬</span></div>`;
   const _linkedFilmsForAlert = (db.films||[]).filter(f=>f.seriesId===r.id).length;
   const hasAlertEntry = r.status==='watching' && (!!_notes || _linkedFilmsForAlert>0);
   const alertBadge = hasAlertEntry ? `<span class="rm-alert-linked-badge" title="Presente nel pannello Da ricordare">🔔</span>` : '';
   return `<div class="rm-item ${r.status==='watching'?'watching':''} ${hasAlertEntry?'has-alert-link':''}" data-id="${r.id}" style="animation:itemIn .22s ${staggerDelay(i,0.04,0.3)}s both;cursor:pointer;" onclick="handleRmItemClick(event,'${r.id}')">
+    <div class="rm-backdrop" data-bd="${escAttr(r.imdbId||_srcSeries?.imdbId||'')}"></div>
     ${posterHtml}
     <div class="drag-handle">⠿</div>
     <div class="rm-num">${String(i+1).padStart(2,'0')}</div>
@@ -4253,7 +4786,7 @@ function buildRmItemHTML(r, i){
       <div class="rm-meta">${r.eps} ep${filmsTag}${_notes ? ' · ' : ''}${notesTooltip}</div>
     </div>
     ${r.status==='watching'?`<div class="watching-tag">watching</div>`:''}
-    ${r.status==='watching'?`<div class="rm-ep-display">${r.currentEp||0}/${r.eps}</div>`:''}
+    ${r.status==='watching'?`<div class="rm-ep-wrap"><div class="rm-ep-display">${r.currentEp||0}/${r.eps} • ${pct}%</div></div>`:''}
     <span class="badge ${r.type.toLowerCase()}">${r.type}</span>
     <div class="reorder-btns">
       <button class="reorder-btn" onclick="reorderEntry(db.roadmap,'${r.id}',-1,renderRoadmap)" title="Su">▲</button>
@@ -4284,14 +4817,19 @@ function syncEpUI(id,item){
   if(node){
     const fill=node.querySelector('.progress-bottom-fill');
     const disp=node.querySelector('.rm-ep-display');
+    const pctEl=node.querySelector('.ep-pct');
     const pct=Math.round(item.currentEp/item.eps*100);
     if(fill) fill.style.width=pct+'%';
     if(disp) disp.textContent=`${item.currentEp||0}/${item.eps}`;
+    if(pctEl) pctEl.textContent=pct+'%';
   }
   if(_detailSeriesId===id){
     const modalInp=document.querySelector('#sdBody .ep-input');
     if(modalInp) modalInp.value=item.currentEp||0;
+    const modalPct=document.querySelector('#sdBody .ep-pct');
+    if(modalPct && item.eps>0) modalPct.textContent=Math.round((item.currentEp||0)/item.eps*100)+'%';
   }
+  if(typeof updateWatchingBackdrop==='function') updateWatchingBackdrop();
 }
 function setWatching(id){
   const item=db.roadmap.find(r=>r.id===id);
@@ -4308,6 +4846,7 @@ function setWatching(id){
     node.outerHTML=buildRmItemHTML(item, idx);
   }
   renderRoadmapAlerts();
+  if(typeof updateWatchingBackdrop==='function') updateWatchingBackdrop();
   toast(item.status==='watching'?`▶ In visione: ${item.title}`:`⏸ Interrotto: ${item.title}`);
 }
 
@@ -4330,10 +4869,12 @@ function openRoadmapDetail(id){
         <input class="ep-input" type="number" min="0" max="${r.eps}" value="${r.currentEp||0}" onchange="updateEp('${r.id}',this.value)">
         <span class="ep-total">/${r.eps}</span>
         <button class="step-btn" onclick="stepEp('${r.id}',1)">›</button>
+        <span class="ep-pct" style="margin-left:8px;">${r.eps>0?Math.round((r.currentEp||0)/r.eps*100):0}%</span>
       </div>
     </div>`;
   } else {
     html += `<div class="sd-stat"><div class="sd-stat-label">Episodi</div><div class="sd-stat-value">${r.currentEp||0} / ${r.eps}</div></div>`;
+    html += `<div class="sd-stat"><div class="sd-stat-label">Avanzamento</div><div class="sd-stat-value">${r.eps>0?Math.round((r.currentEp||0)/r.eps*100):0}%</div></div>`;
   }
   html += `<div class="sd-stat"><div class="sd-stat-label">Tipo</div><div class="sd-stat-value">${r.type}</div></div>`;
   html += `<div class="sd-stat"><div class="sd-stat-label">Stato</div><div class="sd-stat-value">${r.status==='watching'?'In visione':'Da iniziare'}</div></div>`;
@@ -4590,7 +5131,7 @@ function renderDropped(){
   if(_skipIfUnchanged('dropped')) return;
   el.innerHTML=db.dropped.map((r,i)=>{
     const posterHtml = r.image
-      ? `<div class="rm-poster"><img src="${escAttr(r.image)}" alt="" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
+      ? `<div class="rm-poster"><img src="${escAttr(r.image)}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
       : `<div class="rm-poster"><span class="rm-poster-noimg">🎬</span></div>`;
     return `<div class="rm-item" style="opacity:0.65" data-id="${r.id}">${posterHtml}<div class="drag-handle">⠿</div><div class="rm-num">${String(i+1).padStart(2,'0')}</div><div class="rm-info"><div class="rm-name" style="text-decoration:line-through">${r.title}</div><div class="rm-meta">${r.eps} ep</div></div><span class="badge dropped">dropped</span><div class="rm-actions"><button class="item-btn" onclick="restoreDropped('${r.id}')" title="Ripristina">↩</button></div></div>`;
   }).join('');
@@ -5173,22 +5714,19 @@ function buildFilmItemHTML(film, idx){
 
 function buildFilmCardHTML(film, idx){
   const imgHtml = film.image
-    ? `<img class="series-card-poster" src="${escAttr(film.image)}" alt="${escAttr(film.title)}" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
+    ? `<img class="series-card-poster" src="${escAttr(film.image)}" alt="${escAttr(film.title)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
     : `<div class="series-card-noimg">🎬</div>`;
   const typeCls = film.type==='DUB' ? 'dub' : 'sub';
   const ordinalHtml = film.seriesOrder ? `<span class="series-card-corner tag-order">${getOrdinal(film.seriesOrder)}</span>` : '';
   const notesHtml = film.notes ? `<div class="series-card-notes">${escAttr(film.notes)}</div>` : '';
   return `
     <div class="series-card" style="animation:itemIn .2s ${staggerDelay(idx,0.02,0.3)}s both;" id="film-card-${film.id}">
-      <div class="series-card-poster-wrap">
+      <div class="series-card-poster-wrap" onclick="event.stopPropagation();openPosterLightbox('film','${film.id}')">
         ${imgHtml}
         ${ordinalHtml}
-        <div class="series-card-poster-overlay">
-          <button class="series-card-overlay-btn" title="Segna come completato" onclick="event.stopPropagation();completeFilm('${film.id}')">✓</button>
-          <button class="series-card-overlay-btn" title="Modifica" onclick="event.stopPropagation();openEditFilmModal('${film.id}')">✎</button>
-        </div>
       </div>
       <div class="series-card-bottom" onclick="openFilmDetail('${film.id}')">
+        <div class="scb-backdrop" data-bd="${escAttr(film.imdbId||'')}"></div>
         <div class="series-card-title">${film.title}</div>
         ${notesHtml}
         <div class="series-card-meta">
@@ -5466,16 +6004,17 @@ function renderFilms(){
     const totalSagaFilms = allSagaFilms.length;
 
     const imgHtml = posterSrc
-      ? `<img class="series-card-poster" src="${escAttr(posterSrc)}" alt="${escAttr(fsName)}" loading="lazy" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
+      ? `<img class="series-card-poster" src="${escAttr(posterSrc)}" alt="${escAttr(fsName)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.outerHTML='<div class=&quot;series-card-noimg&quot;>🎬</div>';">`
       : `<div class="series-card-noimg">🎬</div>`;
 
     return `
     <div class="series-card anime-franchise-card" style="animation:itemIn .2s ${staggerDelay(idx,0.02,0.3)}s both;cursor:pointer;" id="franchise-block-${fsId}" onclick="openAnimeFranchiseModal('${fsId}')">
-      <div class="series-card-poster-wrap">
+      <div class="series-card-poster-wrap" onclick="event.stopPropagation();openPosterLightboxRaw('${escJs(posterSrc)}','${escJs(fsName)}')">
         ${imgHtml}
         <span class="series-card-corner tag-film">${totalSagaFilms} film</span>
       </div>
       <div class="series-card-bottom">
+        <div class="scb-backdrop" data-bd="${escAttr((saga&&saga.imdbId)||'')}"></div>
         <div class="series-card-title">${fsName}</div>
         <div class="series-card-tagrow">
           ${roadmapTag}
@@ -5651,10 +6190,13 @@ window.addEventListener('scroll', function(){
   _rmTooltipEl.style.top = top + 'px';
   clearTimeout(_rmTooltipScrollHideTimer);
   _rmTooltipScrollHideTimer = setTimeout(hideRmTooltip, 2000);
-}, true);
+}, {capture:true, passive:true});
 
 loadTheme();
+loadPerfMode();
 loadPureBlackBg();
+loadBackdropsSetting();
+scheduleBackdropPass();
 loadLocal();
 if(!db.films) db.films=[];
 if(!db.filmsCompleted) db.filmsCompleted=[];
