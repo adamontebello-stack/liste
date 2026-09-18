@@ -702,6 +702,9 @@ main {
 .serie-sticky-head {
   flex: 0 0 auto;
   background: transparent;
+  position: sticky;
+  top: 12px;
+  z-index: 100;
 }
 
 /* Dub/Sub columns scroll independently instead of scrolling the whole page */
@@ -1165,7 +1168,9 @@ body.theme-light #watchingBackdrop.on { opacity: 0.12; }
   color: #fff;
   box-shadow: 0 3px 12px var(--accentGlow);
 }
-.filter-toggle-btn.active { border-color: var(--accent); color: var(--accent2); background: var(--card-hover); }
+/* Pulsante Ricerca: stile invertito — quando ha la classe "active" (ricerca nascosta,
+   stato di default) resta normale; quando NON è attivo (ricerca visibile) si evidenzia. */
+.filter-toggle-btn:not(.active) { border-color: var(--accent); color: var(--accent2); background: var(--card-hover); }
 
 /* Toggle ricerca: nasconde solo la casella di ricerca. Filtro episodi e
    ordinamento restano sempre visibili nella riga. */
@@ -1453,6 +1458,12 @@ body.theme-light #watchingBackdrop.on { opacity: 0.12; }
   box-shadow: 0 0 8px var(--dub-bg);
 }
 .modal-check-row.dub-check.checked .modal-check-lbl { color: var(--dub-color); }
+
+/* Checkbox priorità: gruppo di 5 checkbox mutuamente esclusive */
+.priority-check-group { display: flex; flex-wrap: nowrap; gap: 5px; margin-bottom: 8px; }
+.priority-check-group .priority-check { flex: 1 1 0; min-width: 0; margin-bottom: 0; padding: 8px 2px; gap: 4px; justify-content: center; }
+.priority-check-group .priority-check .modal-check-box { width: 15px; height: 15px; flex-shrink: 0; }
+.priority-check-group .priority-check .modal-check-lbl { font-size: 0.74rem; white-space: nowrap; }
 
 /* Toggle "sfondo nero puro" nelle impostazioni */
 .settings-toggle-row {
@@ -2112,6 +2123,27 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
   text-shadow: 0 0 8px rgba(255,215,0,0.7) !important;
 }
 
+/* ===== BOX PRIORITÀ (sostituisce la stella dei preferiti) ===== */
+.priority-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 20px; padding: 0 7px;
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.64rem; font-weight: 800;
+  flex-shrink: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34,1.4,0.64,1);
+}
+.priority-badge:hover { transform: scale(1.12); }
+.priority-badge.priority-molto-alta { background: rgba(255,59,74,0.16); border-color: rgba(255,59,74,0.4); color: #ff6b76; }
+.priority-badge.priority-alta { background: rgba(255,153,51,0.16); border-color: rgba(255,153,51,0.4); color: #ffb066; }
+.priority-badge.priority-normale { background: var(--surface3); border-color: var(--border2); color: var(--muted2); }
+.priority-badge.priority-bassa { background: rgba(102,178,255,0.14); border-color: rgba(102,178,255,0.35); color: #7ec2ff; }
+.priority-badge.priority-molto-bassa { background: rgba(150,150,160,0.14); border-color: rgba(150,150,160,0.3); color: var(--muted); }
+
 /* ===== SERIES DETAIL POPUP ===== */
 .series-detail-overlay {
   position: fixed; inset: 0;
@@ -2695,6 +2727,14 @@ body.perf .bottom-nav-indicator {
             <button class="ep-filter-clear" id="epFilterClear" onclick="clearEpFilter()">✕</button>
           </div>
         </div>
+        <select class="sort-select" id="catalogPriorityFilter" onchange="renderCatalog()" title="Filtra per priorità">
+          <option value="">Tutte le priorità</option>
+          <option value="molto-alta">Molto Alta</option>
+          <option value="alta">Alta</option>
+          <option value="normale">Normale</option>
+          <option value="bassa">Bassa</option>
+          <option value="molto-bassa">Molto Bassa</option>
+        </select>
         <select class="sort-select" id="catalogSort" onchange="renderCatalog()">
           <option value="recent">Recenti</option>
           <option value="eps">ep ↑</option>
@@ -2906,6 +2946,14 @@ body.perf .bottom-nav-indicator {
       <span class="modal-check-box" id="ongoingCheckBox">✓</span>
       <span class="modal-check-lbl">In corso (airing)</span>
     </div>
+    <span class="edit-label" style="margin-top:2px;display:block;">Priorità</span>
+    <div class="priority-check-group" id="addPriorityGroup">
+      <div class="modal-check-row priority-check" data-priority="molto-alta" onclick="selectAddPriority('molto-alta')" title="Molto Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">1°</span></div>
+      <div class="modal-check-row priority-check" data-priority="alta" onclick="selectAddPriority('alta')" title="Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">2°</span></div>
+      <div class="modal-check-row priority-check checked" data-priority="normale" onclick="selectAddPriority('normale')" title="Normale"><span class="modal-check-box">✓</span><span class="modal-check-lbl">3°</span></div>
+      <div class="modal-check-row priority-check" data-priority="bassa" onclick="selectAddPriority('bassa')" title="Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">4°</span></div>
+      <div class="modal-check-row priority-check" data-priority="molto-bassa" onclick="selectAddPriority('molto-bassa')" title="Molto Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">5°</span></div>
+    </div>
     <div class="edit-modal-actions">
       <button class="edit-cancel-btn" onclick="closeAddSeriesModal()">Annulla</button>
       <button class="edit-save-btn" onclick="addSeries()">+ Aggiungi</button>
@@ -3049,6 +3097,14 @@ body.perf .bottom-nav-indicator {
       <span class="modal-check-box" id="editOngoingBox">✓</span>
       <span class="modal-check-lbl">In corso (airing)</span>
     </div>
+    <span class="edit-label" style="margin-top:2px;display:block;">Priorità</span>
+    <div class="priority-check-group" id="editPriorityGroup">
+      <div class="modal-check-row priority-check" data-priority="molto-alta" onclick="selectEditPriority('molto-alta')" title="Molto Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">1°</span></div>
+      <div class="modal-check-row priority-check" data-priority="alta" onclick="selectEditPriority('alta')" title="Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">2°</span></div>
+      <div class="modal-check-row priority-check checked" data-priority="normale" onclick="selectEditPriority('normale')" title="Normale"><span class="modal-check-box">✓</span><span class="modal-check-lbl">3°</span></div>
+      <div class="modal-check-row priority-check" data-priority="bassa" onclick="selectEditPriority('bassa')" title="Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">4°</span></div>
+      <div class="modal-check-row priority-check" data-priority="molto-bassa" onclick="selectEditPriority('molto-bassa')" title="Molto Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">5°</span></div>
+    </div>
     <div class="edit-modal-actions">
       <button class="edit-cancel-btn" onclick="closeEditModal()">Annulla</button>
       <button class="edit-save-btn" onclick="saveEditModal()">✓ Salva</button>
@@ -3076,6 +3132,56 @@ body.perf .bottom-nav-indicator {
 
 <script>
 const PATTERN = ["DUB","DUB","SUB"];
+// ---- PRIORITÀ SERIE ----
+const PRIORITY_LEVELS = [
+  {value:'molto-alta', label:'Molto Alta', rank:1},
+  {value:'alta', label:'Alta', rank:2},
+  {value:'normale', label:'Normale', rank:3},
+  {value:'bassa', label:'Bassa', rank:4},
+  {value:'molto-bassa', label:'Molto Bassa', rank:5}
+];
+function priorityInfo(p){ return PRIORITY_LEVELS.find(x=>x.value===p) || PRIORITY_LEVELS[2]; }
+// Selezionare una priorità non deve mai far scrollare la pagina in cima:
+// si blocca la posizione di scroll attuale e la si ripristina subito dopo.
+// Perché non basta salvare window.scrollY: le voci hanno content-visibility:auto e, quando la
+// lista viene ricostruita (innerHTML), le voci fuori schermo tornano all'altezza "segnaposto" del
+// CSS (64px / 120px) invece di quella reale. La pagina cambia altezza di colpo e il contenuto che
+// stai guardando scivola un po' su o giù. Qui si memorizzano le altezze reali PRIMA del rebuild e
+// si riapplicano alle nuove voci, così l'altezza totale resta identica; poi si ripristina lo scroll
+// della pagina e di eventuali contenitori interni (es. le colonne DUB/SUB in modalità lista).
+const _CV_SELECTOR = '.series-card, .item, .rm-item, .completed-item';
+function _cvKey(el){ const k = el.id || el.dataset.id; return k ? el.classList[0]+'|'+k : ''; }
+function _withScrollLock(fn){
+  const y = window.scrollY;
+  const scrolled = [];
+  document.querySelectorAll('*').forEach(el=>{ if(el.scrollTop>0) scrolled.push([el, el.scrollTop]); });
+  const sizes = new Map();
+  document.querySelectorAll(_CV_SELECTOR).forEach(el=>{
+    const k = _cvKey(el); if(!k) return;
+    const h = el.getBoundingClientRect().height;
+    if(!(h>0)) return;
+    // contain-intrinsic-size è l'altezza del CONTENT box: tolgo padding e bordi (altrimenti ogni voce cresce)
+    const cs = getComputedStyle(el);
+    const extra = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0) + (parseFloat(cs.borderTopWidth)||0) + (parseFloat(cs.borderBottomWidth)||0);
+    sizes.set(k, Math.max(0, h - extra));
+  });
+  fn();
+  document.querySelectorAll(_CV_SELECTOR).forEach(el=>{
+    const h = sizes.get(_cvKey(el));
+    if(h) el.style.containIntrinsicHeight = 'auto '+h.toFixed(2)+'px';
+  });
+  const restore = ()=>{
+    if(window.scrollY!==y) window.scrollTo({top:y, left:0, behavior:'instant'});
+    scrolled.forEach(([el,t])=>{ if(el.isConnected && el.scrollTop!==t) el.scrollTop = t; });
+  };
+  restore();
+  requestAnimationFrame(restore);
+}
+function priorityBadgeHTML(s){
+  const info=priorityInfo(s.priority);
+  return `<span class="priority-badge priority-${info.value}" title="Priorità: ${info.label}">${info.rank}°</span>`;
+}
+
 const FIREBASE_URL = 'https://serietracker-58894-default-rtdb.europe-west1.firebasedatabase.app/data.json';
 // Endpoint "leggero": legge SOLO il campo _updatedAt (poche decine di byte) invece
 // di scaricare l'intero JSON. Usato per capire se il remoto è cambiato prima di
@@ -3503,6 +3609,7 @@ function closeAddSeriesModal(){
   document.getElementById('notes').value='';
   const ir=document.getElementById('imdbSearchResults'); if(ir){ ir.classList.remove('open'); ir.innerHTML=''; }
   _resetAddOngoing();
+  _resetAddPriority();
 }
 function handleAddSeriesOverlayClick(e){
   if(e.target===document.getElementById('addSeriesModal')) closeAddSeriesModal();
@@ -3627,6 +3734,26 @@ function _resetAddOngoing(){
   if(box) box.style.color='transparent';
 }
 
+// ---- Priorità (form aggiunta) ----
+let _addPriority = 'normale';
+function selectAddPriority(val){
+  _withScrollLock(()=>{
+    _addPriority = val;
+    const group=document.getElementById('addPriorityGroup');
+    if(group) group.querySelectorAll('.priority-check').forEach(el=>{ el.classList.toggle('checked', el.dataset.priority===val); });
+  });
+}
+function _resetAddPriority(){
+  selectAddPriority('normale');
+}
+
+// ---- Filtri catalogo: "In corso" e Priorità ----
+let _onlyOngoing = false;
+function toggleOnlyOngoingFilter(){
+  _onlyOngoing = !_onlyOngoing;
+  renderCatalog();
+}
+
 function buildItemHTML(s, i){
   return `
     <div class="item" style="animation:itemIn .2s ${staggerDelay(i,0.025,0.3)}s both;cursor:pointer;" id="item-${s.id}" onclick="openSeriesDetail('${s.id}')">
@@ -3638,7 +3765,7 @@ function buildItemHTML(s, i){
       ${s.ongoing ? `<span class="ongoing-tag">▶ In corso</span>` : ''}
       ${s.films ? `<span class="film-tag">${s.films} film</span>` : ''}
       <div class="item-eps">${s.eps} ep</div>
-      <button class="fav-btn ${s.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${s.id}')" title="Preferito">★</button>
+      ${priorityBadgeHTML(s)}
     </div>`;
 }
 
@@ -3728,7 +3855,7 @@ function openSeriesDetail(id){
 
   // Footer
   document.getElementById('sdFooter').innerHTML =
-    `<button class="fav-btn ${s.favorite?'active':''}" id="sdFavBtn" onclick="toggleFavorite('${s.id}')" title="${s.favorite?'Rimuovi dai preferiti':'Aggiungi ai preferiti'}" style="font-size:1.2rem;padding:4px 8px;">★</button>
+    `<button class="priority-badge priority-${(s.priority||'normale')}" onclick="closeSeriesDetail();openEditModal('${s.id}')" title="Priorità: ${priorityInfo(s.priority).label} — clicca per modificare" style="font-size:0.8rem;height:auto;padding:8px 10px;">${priorityInfo(s.priority).rank}°</button>
      <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();addToRoadmap('${s.id}')" style="flex:1;">＋ Roadmap</button>
      <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditModal('${s.id}')" style="flex:1;">✎ Modifica</button>
      <button class="btn btn-sm" onclick="closeSeriesDetail();removeSeries('${s.id}')" style="background:var(--red);border:none;box-shadow:0 4px 12px rgba(255,59,74,0.35);flex:0 0 auto;">✕</button>`;
@@ -3821,13 +3948,14 @@ function addSeries(){
   const image=imdbPosterUrl(imdbId);
   const notes=document.getElementById('notes').value.trim();
   const ongoing=_addOngoing;
+  const priority=_addPriority;
   if(!title||!eps||eps<1){ toast('Compila titolo ed episodi','error'); return; }
   if(db.series.find(s=>s.title.toLowerCase()===title.toLowerCase())){ toast('Serie già presente','error'); return; }
-  const newSeries={id:crypto.randomUUID(),title,eps,films,type,imdbId,image,notes,ongoing,inRoadmap:false,addedAt:Date.now()};
+  const newSeries={id:crypto.randomUUID(),title,eps,films,type,imdbId,image,notes,ongoing,priority,inRoadmap:false,addedAt:Date.now()};
   db.series.push(newSeries);
   save();
   localStorage.setItem('st_lastSeriesType', type);
-  renderCatalog();
+  _withScrollLock(()=>renderCatalog());
   // Reset solo titolo, episodi, film, note — mantieni tipo e ongoing
   document.getElementById('title').value='';
   document.getElementById('eps').value='';
@@ -3850,7 +3978,7 @@ function addToRoadmap(id){
   const s=db.series.find(x=>x.id===id);
   if(!s||s.inRoadmap){ toast('Già in roadmap','error'); return; }
   s.inRoadmap=true;
-  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,imdbId:s.imdbId||'',image:s.image||'',notes:s.notes||'',ongoing:!!s.ongoing,status:'normal',currentEp:0});
+  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,imdbId:s.imdbId||'',image:s.image||'',notes:s.notes||'',ongoing:!!s.ongoing,priority:s.priority||'normale',status:'normal',currentEp:0});
   save();
   renderCatalog();
   renderRoadmap();
@@ -3860,9 +3988,9 @@ function addToRoadmap(id){
 function updateCatalogStats(){
   const all=db.series;
   const totalEps=all.reduce((a,s)=>a+s.eps,0);
-  const favCount=all.filter(s=>s.favorite).length;
-  const favActiveCls = _onlyFavorites ? ' fav-active' : '';
-  const favPill = `<div class="stat-pill stat-pill-preferiti${favActiveCls}" onclick="toggleOnlyFavorites()">★ Preferiti: <strong>${favCount}</strong></div>`;
+  const ongoingCount=all.filter(s=>s.ongoing).length;
+  const ongoingActiveCls = _onlyOngoing ? ' fav-active' : '';
+  const ongoingPill = `<div class="stat-pill stat-pill-preferiti${ongoingActiveCls}" onclick="toggleOnlyOngoingFilter()">▶ In corso: <strong>${ongoingCount}</strong></div>`;
   const typeClickable = _catalogViewMode === 'cards';
   const dubActiveCls = (typeClickable && _cardTypeFilter==='DUB') ? ' type-pill-active dub-active' : '';
   const subActiveCls = (typeClickable && _cardTypeFilter==='SUB') ? ' type-pill-active sub-active' : '';
@@ -3871,7 +3999,7 @@ function updateCatalogStats(){
   const subOnclick = typeClickable ? ` onclick="toggleCardTypeFilter('SUB')"` : '';
   const dubPill = `<div class="stat-pill stat-pill-type${typeDisabledCls}${dubActiveCls}"${dubOnclick} title="${typeClickable?'Filtra: solo doppiati (vista schede)':''}"><span class="dot blue"></span> DUB: <strong>${all.filter(s=>s.type==='DUB').length}</strong></div>`;
   const subPill = `<div class="stat-pill stat-pill-type${typeDisabledCls}${subActiveCls}"${subOnclick} title="${typeClickable?'Filtra: solo sottotitolati (vista schede)':''}"><span class="dot red"></span> SUB: <strong>${all.filter(s=>s.type==='SUB').length}</strong></div>`;
-  document.getElementById('catalogStats').innerHTML=`<div class="stat-pill"><span class="dot amber"></span> Ep totali: <strong>${totalEps}</strong></div><div class="stat-pill"><span class="dot"></span> Totale: <strong>${all.length}</strong></div>${dubPill}${subPill}${favPill}<span class="ep-filter-badge" id="epFilterBadge"></span>`;
+  document.getElementById('catalogStats').innerHTML=`<div class="stat-pill"><span class="dot amber"></span> Ep totali: <strong>${totalEps}</strong></div><div class="stat-pill"><span class="dot"></span> Totale: <strong>${all.length}</strong></div>${dubPill}${subPill}${ongoingPill}<span class="ep-filter-badge" id="epFilterBadge"></span>`;
 }
 
 let _onlyFavorites = false;
@@ -4112,6 +4240,7 @@ function toggleCatalogFilters(){
   if(row) row.classList.toggle('filters-hidden', _catalogFiltersHidden);
   const btn = document.getElementById('catalogFilterToggleBtn');
   if(btn) btn.classList.toggle('active', _catalogFiltersHidden);
+  if(!_catalogFiltersHidden) setTimeout(()=>document.getElementById('catalogSearch')?.focus(),30);
 }
 function buildCardHTML(s, i){
   const imgHtml = s.image
@@ -4141,7 +4270,7 @@ function buildCardHTML(s, i){
         <div class="series-card-meta">
           <span class="series-card-eps">${s.eps} ep</span>
           ${noteTagHtml}
-          <button class="series-card-fav ${s.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${s.id}')" title="Preferito">★</button>
+          ${priorityBadgeHTML(s)}
         </div>
       </div>
     </div>`;
@@ -4166,6 +4295,14 @@ function toggleEditOngoing(){
   _editOngoing = !_editOngoing;
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
+}
+let _editPriority = 'normale';
+function selectEditPriority(val){
+  _withScrollLock(()=>{
+    _editPriority = val;
+    const group=document.getElementById('editPriorityGroup');
+    if(group) group.querySelectorAll('.priority-check').forEach(el=>{ el.classList.toggle('checked', el.dataset.priority===val); });
+  });
 }
 function findAnyEntryById(id){
   let rec = db.series.find(x=>x.id===id);
@@ -4192,8 +4329,9 @@ function openEditModal(id){
   document.getElementById('editModalNotes').value=s.notes||'';
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
+  selectEditPriority(s.priority||'normale');
   document.getElementById('editSeriesModal').classList.add('open');
-  setTimeout(()=>document.getElementById('editModalTitle').focus(),80);
+  setTimeout(()=>document.getElementById('editModalTitle').focus({preventScroll:true}),80);
 }
 function closeEditModal(){
   document.getElementById('editSeriesModal').classList.remove('open');
@@ -4217,21 +4355,23 @@ function saveEditModal(){
   const newImage=imdbPosterUrl(newImdbId);
   const newNotes=document.getElementById('editModalNotes').value.trim();
   if(!newTitle||!newEps||newEps<1){ toast('Dati non validi','error'); return; }
-  s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.imdbId=newImdbId; s.image=newImage; s.notes=newNotes; s.ongoing=_editOngoing;
-  // Propaga titolo/episodi/tipo/imdb/poster su tutti gli array in cui l'id compare
-  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; r.imdbId=newImdbId; r.image=newImage; } });
-  save();
-  // Ricostruisce la sezione dove si trova l'elemento modificato
-  if(found.list==='series') renderCatalog();
-  else if(found.list==='roadmap') renderRoadmap();
-  else if(found.list==='completed') renderCompleted();
-  else if(found.list==='dropped') renderDropped();
-  // Se compare anche altrove, aggiorna quelle viste
-  if(found.list!=='roadmap' && db.roadmap.find(x=>x.id===id)) renderRoadmap();
-  if(found.list!=='series' && db.series.find(x=>x.id===id)) renderCatalog();
-  updateCatalogStats();
-  toast('Serie aggiornata ✓','success');
-  closeEditModal();
+  _withScrollLock(()=>{
+    s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.imdbId=newImdbId; s.image=newImage; s.notes=newNotes; s.ongoing=_editOngoing; s.priority=_editPriority;
+    // Propaga titolo/episodi/tipo/imdb/poster su tutti gli array in cui l'id compare
+    [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; r.imdbId=newImdbId; r.image=newImage; } });
+    save();
+    // Ricostruisce la sezione dove si trova l'elemento modificato
+    if(found.list==='series') renderCatalog();
+    else if(found.list==='roadmap') renderRoadmap();
+    else if(found.list==='completed') renderCompleted();
+    else if(found.list==='dropped') renderDropped();
+    // Se compare anche altrove, aggiorna quelle viste
+    if(found.list!=='roadmap' && db.roadmap.find(x=>x.id===id)) renderRoadmap();
+    if(found.list!=='series' && db.series.find(x=>x.id===id)) renderCatalog();
+    updateCatalogStats();
+    toast('Serie aggiornata ✓','success');
+    closeEditModal();
+  });
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEditModal(); closeSeriesDetail(); closeAnimeFranchiseModal(); } });
 
@@ -4245,12 +4385,13 @@ function renderCatalog(){
   const q=(document.getElementById('catalogSearch')?.value||'').toLowerCase();
   const epF=parseInt(document.getElementById('epFilterInput')?.value)||0;
   const sort=document.getElementById('catalogSort')?.value||'eps';
+  const priorityFilterVal=document.getElementById('catalogPriorityFilter')?.value||'';
   updateCatalogStats();
   const badge=document.getElementById('epFilterBadge');
   if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
   // Evita di ricostruire (e rigiocare la cascata) se niente è cambiato da quando è stata renderizzata l'ultima volta
-  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites+'|'+_catalogViewMode+'|'+_cardTypeFilter)) return;
-  let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite));
+  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites+'|'+_onlyOngoing+'|'+priorityFilterVal+'|'+_catalogViewMode+'|'+_cardTypeFilter)) return;
+  let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite)&&(!_onlyOngoing||s.ongoing)&&(!priorityFilterVal||(s.priority||'normale')===priorityFilterVal));
   // Costruisce solo la vista attualmente visibile (lista o schede): l'altra viene aggiornata
   // solo quando l'utente effettivamente ci passa, evitando di ricostruire il DOM doppio ad ogni ricerca/filtro.
   if(_catalogViewMode==='list'){
@@ -4280,7 +4421,7 @@ function addRandom(forceType){
   let r=Math.random()*total, picked=pool[pool.length-1];
   for(let i=0;i<pool.length;i++){ r-=weights[i]; if(r<=0){picked=pool[i];break;} }
   picked.inRoadmap=true;
-  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,imdbId:picked.imdbId||'',image:picked.image||'',notes:picked.notes||'',ongoing:!!picked.ongoing,status:'normal',currentEp:0});
+  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,imdbId:picked.imdbId||'',image:picked.image||'',notes:picked.notes||'',ongoing:!!picked.ongoing,priority:picked.priority||'normale',status:'normal',currentEp:0});
   if(!forceType) db.patternIndex=(db.patternIndex+1)%PATTERN.length;
   save();
   renderCatalog();
@@ -4463,7 +4604,7 @@ function backToRoadmap_fromCompleted(id){
   const item=db.completed.splice(idx,1)[0];
   item.status='normal'; delete item.completedAt;
   db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:true,addedAt:Date.now()});
   save(); renderRoadmap(); renderCompleted(); toast(`Riportato in roadmap: ${item.title}`,'success');
 }
 function backToCalatogo_fromRoadmap(id){
@@ -4472,14 +4613,14 @@ function backToCalatogo_fromRoadmap(id){
   const item=db.roadmap.splice(idx,1)[0];
   const existing=db.series.find(s=>s.id===item.id);
   if(existing) existing.inRoadmap=false;
-  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
+  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:false,addedAt:Date.now()});
   save(); renderRoadmap(); renderCatalog(); toast(`${item.title} torna in catalogo`,'info');
 }
 function backToCatalogo_fromDropped(id){
   const idx=db.dropped.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:false,addedAt:Date.now()});
   save(); renderDropped(); renderCatalog(); toast(`${item.title} ripristinato in catalogo`,'info');
 }
 function restoreDropped(id){
@@ -4487,7 +4628,7 @@ function restoreDropped(id){
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
   item.status='normal'; db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:true,addedAt:Date.now()});
   save(); renderRoadmap(); renderDropped(); toast(`Ripristinato in roadmap: ${item.title}`,'success');
 }
 
@@ -5238,7 +5379,7 @@ function openEditFilmModal(id){
   document.getElementById('editFilmNotes').value = film.notes||'';
   document.getElementById('editFilmImdbId').value = film.imdbId||'';
   document.getElementById('editFilmModal').classList.add('open');
-  setTimeout(()=>document.getElementById('editFilmTitle').focus(),80);
+  setTimeout(()=>document.getElementById('editFilmTitle').focus({preventScroll:true}),80);
 }
 function closeEditFilmModal(){
   document.getElementById('editFilmModal').classList.remove('open');
@@ -5271,7 +5412,7 @@ function saveEditFilm(){
   if(!film){ toast('Film non trovato','error'); return; }
   film.title=title; film.type=type; film.seriesId=seriesId; film.seriesOrder=seriesOrder; film.notes=notes;
   film.imdbId=imdbId; film.image=imdbPosterUrl(imdbId);
-  save(); renderFilms(); renderFilmsCompleted(); updateFilmStats();
+  _withScrollLock(()=>{ save(); renderFilms(); renderFilmsCompleted(); updateFilmStats(); });
   toast('Film aggiornato ✓','success');
   closeEditFilmModal();
 }

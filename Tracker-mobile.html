@@ -367,13 +367,15 @@ header .logo { display: none; }
 .bottom-add-btn svg { width: 22px; height: 22px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2)); }
 .bottom-add-btn:active { transform: scale(0.9); }
 .bottom-add-btn.hidden {
-  opacity: 0;
-  transform: scale(0.4);
+  background: rgba(140,140,140,0.28);
+  border-color: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.55);
+  box-shadow: none;
+  opacity: 0.65;
   pointer-events: none;
-  width: 0;
-  margin: 0 calc(-1 * var(--bottom-bar-gap, 10px) / 2);
-  overflow: hidden;
+  transform: none;
 }
+.bottom-add-btn.hidden svg { opacity: 0.6; }
 .bottom-nav {
   pointer-events: auto;
   position: relative;
@@ -1917,6 +1919,12 @@ body.theme-light #watchingBackdrop.on { opacity: 0.12; }
 }
 .modal-check-row.dub-check.checked .modal-check-lbl { color: var(--dub-color); }
 
+/* Checkbox priorità: gruppo di 5 checkbox mutuamente esclusive */
+.priority-check-group { display: flex; flex-wrap: nowrap; gap: 5px; margin-bottom: 8px; }
+.priority-check-group .priority-check { flex: 1 1 0; min-width: 0; margin-bottom: 0; padding: 8px 2px; gap: 4px; justify-content: center; }
+.priority-check-group .priority-check .modal-check-box { width: 15px; height: 15px; flex-shrink: 0; }
+.priority-check-group .priority-check .modal-check-lbl { font-size: 0.74rem; white-space: nowrap; }
+
 .settings-toggle-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px;
@@ -2541,6 +2549,32 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
   text-shadow: 0 0 8px rgba(255,215,0,0.7) !important;
 }
 
+/* ===== BOX PRIORITÀ (sostituisce la stella dei preferiti) ===== */
+.priority-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 20px; padding: 0 7px;
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.64rem; font-weight: 800;
+  flex-shrink: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34,1.4,0.64,1);
+}
+.priority-badge:hover { transform: scale(1.12); }
+.priority-badge.priority-molto-alta { background: rgba(255,59,74,0.16); border-color: rgba(255,59,74,0.4); color: #ff6b76; }
+.priority-badge.priority-alta { background: rgba(255,153,51,0.16); border-color: rgba(255,153,51,0.4); color: #ffb066; }
+.priority-badge.priority-normale { background: var(--surface3); border-color: var(--border2); color: var(--muted2); }
+.priority-badge.priority-bassa { background: rgba(102,178,255,0.14); border-color: rgba(102,178,255,0.35); color: #7ec2ff; }
+.priority-badge.priority-molto-bassa { background: rgba(150,150,160,0.14); border-color: rgba(150,150,160,0.3); color: var(--muted); }
+
+/* Badge priorità nelle card: resta sulla stessa riga degli altri tag, spinto in fondo a destra */
+.series-card-meta > .priority-badge {
+  margin-left: auto;
+}
+
 .series-detail-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.78);
@@ -2649,6 +2683,9 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
 .sd-footer .fav-btn {
   flex: 0 0 auto;
 }
+.sd-footer .priority-badge {
+  flex: 0 0 auto;
+}
 
 @media (max-width: 420px) {
   .sd-footer {
@@ -2663,6 +2700,10 @@ body.pure-black-bg::before, body.pure-black-bg::after { display: none; }
   .sd-footer .fav-btn {
     font-size: 1.05rem !important;
     padding: 4px 6px !important;
+  }
+  .sd-footer .priority-badge {
+    font-size: 0.7rem !important;
+    padding: 8px 10px !important;
   }
 }
 @media (max-width: 340px) {
@@ -3180,6 +3221,15 @@ body.perf .bottom-nav-indicator {
               <option value="za">Ordina: Z–A</option>
             </select>
             <div class="fab-item" id="catalogFavFabBtn" onclick="toggleOnlyFavorites()"><span>★ Preferiti</span><span class="fab-check">✓</span></div>
+            <div class="fab-item" id="catalogOngoingFabBtn" onclick="toggleOnlyOngoingFilter()"><span>▶ Solo in corso</span><span class="fab-check">✓</span></div>
+            <select class="fab-select" id="catalogPriorityFilter" onchange="renderCatalog()">
+              <option value="">Priorità: tutte</option>
+              <option value="molto-alta">Priorità: Molto Alta</option>
+              <option value="alta">Priorità: Alta</option>
+              <option value="normale">Priorità: Normale</option>
+              <option value="bassa">Priorità: Bassa</option>
+              <option value="molto-bassa">Priorità: Molto Bassa</option>
+            </select>
           </div>
         </div>
         <button class="round-fab" id="catalogSearchFabBtn" onclick="toggleCatalogFilters()" title="Cerca">
@@ -3398,6 +3448,14 @@ body.perf .bottom-nav-indicator {
       <span class="modal-check-box" id="ongoingCheckBox">✓</span>
       <span class="modal-check-lbl">In corso (airing)</span>
     </div>
+    <span class="edit-label" style="margin-top:2px;display:block;">Priorità</span>
+    <div class="priority-check-group" id="addPriorityGroup">
+      <div class="modal-check-row priority-check" data-priority="molto-alta" onclick="selectAddPriority('molto-alta')" title="Molto Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">1°</span></div>
+      <div class="modal-check-row priority-check" data-priority="alta" onclick="selectAddPriority('alta')" title="Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">2°</span></div>
+      <div class="modal-check-row priority-check checked" data-priority="normale" onclick="selectAddPriority('normale')" title="Normale"><span class="modal-check-box">✓</span><span class="modal-check-lbl">3°</span></div>
+      <div class="modal-check-row priority-check" data-priority="bassa" onclick="selectAddPriority('bassa')" title="Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">4°</span></div>
+      <div class="modal-check-row priority-check" data-priority="molto-bassa" onclick="selectAddPriority('molto-bassa')" title="Molto Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">5°</span></div>
+    </div>
     <div class="edit-modal-actions">
       <button class="edit-cancel-btn" onclick="closeAddSeriesModal()">Annulla</button>
       <button class="edit-save-btn" onclick="addSeries()">+ Aggiungi</button>
@@ -3537,6 +3595,14 @@ body.perf .bottom-nav-indicator {
       <span class="modal-check-box" id="editOngoingBox">✓</span>
       <span class="modal-check-lbl">In corso (airing)</span>
     </div>
+    <span class="edit-label" style="margin-top:2px;display:block;">Priorità</span>
+    <div class="priority-check-group" id="editPriorityGroup">
+      <div class="modal-check-row priority-check" data-priority="molto-alta" onclick="selectEditPriority('molto-alta')" title="Molto Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">1°</span></div>
+      <div class="modal-check-row priority-check" data-priority="alta" onclick="selectEditPriority('alta')" title="Alta"><span class="modal-check-box">✓</span><span class="modal-check-lbl">2°</span></div>
+      <div class="modal-check-row priority-check checked" data-priority="normale" onclick="selectEditPriority('normale')" title="Normale"><span class="modal-check-box">✓</span><span class="modal-check-lbl">3°</span></div>
+      <div class="modal-check-row priority-check" data-priority="bassa" onclick="selectEditPriority('bassa')" title="Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">4°</span></div>
+      <div class="modal-check-row priority-check" data-priority="molto-bassa" onclick="selectEditPriority('molto-bassa')" title="Molto Bassa"><span class="modal-check-box">✓</span><span class="modal-check-lbl">5°</span></div>
+    </div>
     <div class="edit-modal-actions">
       <button class="edit-cancel-btn" onclick="closeEditModal()">Annulla</button>
       <button class="edit-save-btn" onclick="saveEditModal()">✓ Salva</button>
@@ -3563,6 +3629,55 @@ body.perf .bottom-nav-indicator {
 
 <script>
 const PATTERN = ["DUB","DUB","SUB"];
+// ---- PRIORITÀ SERIE ----
+const PRIORITY_LEVELS = [
+  {value:'molto-alta', label:'Molto Alta', rank:1},
+  {value:'alta', label:'Alta', rank:2},
+  {value:'normale', label:'Normale', rank:3},
+  {value:'bassa', label:'Bassa', rank:4},
+  {value:'molto-bassa', label:'Molto Bassa', rank:5}
+];
+function priorityInfo(p){ return PRIORITY_LEVELS.find(x=>x.value===p) || PRIORITY_LEVELS[2]; }
+// Selezionare una priorità non deve mai far scrollare la pagina in cima:
+// si blocca la posizione di scroll attuale e la si ripristina subito dopo.
+// Perché non basta salvare window.scrollY: le voci hanno content-visibility:auto e, quando la
+// lista viene ricostruita (innerHTML), le voci fuori schermo tornano all'altezza "segnaposto" del
+// CSS (64px / 120px) invece di quella reale. La pagina cambia altezza di colpo e il contenuto che
+// stai guardando scivola un po' su o giù. Qui si memorizzano le altezze reali PRIMA del rebuild e
+// si riapplicano alle nuove voci, così l'altezza totale resta identica; poi si ripristina lo scroll
+// della pagina e di eventuali contenitori interni (es. le colonne DUB/SUB in modalità lista).
+const _CV_SELECTOR = '.series-card, .item, .rm-item, .completed-item';
+function _cvKey(el){ const k = el.id || el.dataset.id; return k ? el.classList[0]+'|'+k : ''; }
+function _withScrollLock(fn){
+  const y = window.scrollY;
+  const scrolled = [];
+  document.querySelectorAll('*').forEach(el=>{ if(el.scrollTop>0) scrolled.push([el, el.scrollTop]); });
+  const sizes = new Map();
+  document.querySelectorAll(_CV_SELECTOR).forEach(el=>{
+    const k = _cvKey(el); if(!k) return;
+    const h = el.getBoundingClientRect().height;
+    if(!(h>0)) return;
+    // contain-intrinsic-size è l'altezza del CONTENT box: tolgo padding e bordi (altrimenti ogni voce cresce)
+    const cs = getComputedStyle(el);
+    const extra = (parseFloat(cs.paddingTop)||0) + (parseFloat(cs.paddingBottom)||0) + (parseFloat(cs.borderTopWidth)||0) + (parseFloat(cs.borderBottomWidth)||0);
+    sizes.set(k, Math.max(0, h - extra));
+  });
+  fn();
+  document.querySelectorAll(_CV_SELECTOR).forEach(el=>{
+    const h = sizes.get(_cvKey(el));
+    if(h) el.style.containIntrinsicHeight = 'auto '+h.toFixed(2)+'px';
+  });
+  const restore = ()=>{
+    if(window.scrollY!==y) window.scrollTo({top:y, left:0, behavior:'instant'});
+    scrolled.forEach(([el,t])=>{ if(el.isConnected && el.scrollTop!==t) el.scrollTop = t; });
+  };
+  restore();
+  requestAnimationFrame(restore);
+}
+function priorityBadgeHTML(s){
+  const info=priorityInfo(s.priority);
+  return `<span class="priority-badge priority-${info.value}" title="Priorità: ${info.label}">${info.rank}°</span>`;
+}
 const FIREBASE_URL = 'https://serietracker-58894-default-rtdb.europe-west1.firebasedatabase.app/data.json';
 const FIREBASE_TS_URL = FIREBASE_URL.replace(/\.json$/, '/_updatedAt.json');
 const DB_TOP_KEYS = ['series','roadmap','dropped','completed','filmSeries','films','filmsCompleted','patternIndex'];
@@ -3949,34 +4064,16 @@ function moveBottomNavIndicator(){
 }
 window.addEventListener('resize', moveBottomNavIndicator);
 
-/* Mentre il tasto "+" appare/scompare, la bottom-nav cambia larghezza (flex: 1 1 auto)
-   e la posizione delle bn-btn si sposta durante l'animazione: l'indicatore deve
-   inseguire la nav fotogramma per fotogramma finché la transizione non finisce,
-   altrimenti resta "incastrato" a metà. */
-function _trackIndicatorDuringNavResize(){
-  const indicator = document.getElementById('bottomNavIndicator');
-  if(indicator) indicator.classList.add('no-transition');
-  const start = performance.now();
-  const duration = 420; // leggermente più lunga della transition (0.35s) del bottone +
-  function step(now){
-    moveBottomNavIndicator();
-    if(now - start < duration){
-      requestAnimationFrame(step);
-    } else if(indicator){
-      indicator.classList.remove('no-transition');
-      moveBottomNavIndicator();
-    }
-  }
-  requestAnimationFrame(step);
-}
-
 function updateBottomAddBtn(sectionId){
   const btn = document.getElementById('bottomAddBtn');
   if(!btn) return;
   const shouldHide = sectionId!=='catalogo';
   if(btn.classList.contains('hidden') === shouldHide) return;
+  // Il bottone "+" non viene più tolto dal flusso (niente resize della bottom-nav):
+  // nelle sezioni dove non è utilizzabile viene semplicemente disattivato visivamente.
   btn.classList.toggle('hidden', shouldHide);
-  _trackIndicatorDuringNavResize();
+  btn.disabled = shouldHide;
+  btn.setAttribute('aria-disabled', shouldHide ? 'true' : 'false');
 }
 function handleBottomAddClick(){
   const catalogo = document.getElementById('catalogo');
@@ -4002,6 +4099,7 @@ function closeAddSeriesModal(){
   document.getElementById('notes').value='';
   const ir=document.getElementById('imdbSearchResults'); if(ir){ ir.classList.remove('open'); ir.innerHTML=''; }
   _resetAddOngoing();
+  _resetAddPriority();
 }
 function handleAddSeriesOverlayClick(e){
   if(e.target===document.getElementById('addSeriesModal')) closeAddSeriesModal();
@@ -4117,6 +4215,19 @@ function _resetAddOngoing(){
   if(box) box.style.color='transparent';
 }
 
+// ---- Priorità (form aggiunta) ----
+let _addPriority = 'normale';
+function selectAddPriority(val){
+  _withScrollLock(()=>{
+    _addPriority = val;
+    const group=document.getElementById('addPriorityGroup');
+    if(group) group.querySelectorAll('.priority-check').forEach(el=>{ el.classList.toggle('checked', el.dataset.priority===val); });
+  });
+}
+function _resetAddPriority(){
+  selectAddPriority('normale');
+}
+
 function buildItemHTML(s, i){
   return `
     <div class="item" style="animation:itemIn .2s ${staggerDelay(i,0.025,0.3)}s both;cursor:pointer;" id="item-${s.id}" onclick="openSeriesDetail('${s.id}')">
@@ -4128,7 +4239,7 @@ function buildItemHTML(s, i){
       ${s.ongoing ? `<span class="ongoing-tag">▶ In corso</span>` : ''}
       ${s.films ? `<span class="film-tag">${s.films} film</span>` : ''}
       <div class="item-eps">${s.eps} ep</div>
-      <button class="fav-btn ${s.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${s.id}')" title="Preferito">★</button>
+      ${priorityBadgeHTML(s)}
     </div>`;
 }
 
@@ -4210,7 +4321,8 @@ function openSeriesDetail(id){
   body.innerHTML = html;
 
   document.getElementById('sdFooter').innerHTML =
-    `<button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();addToRoadmap('${s.id}')">＋ Roadmap</button>
+    `<button class="priority-badge priority-${(s.priority||'normale')}" onclick="closeSeriesDetail();openEditModal('${s.id}')" title="Priorità: ${priorityInfo(s.priority).label} — clicca per modificare" style="font-size:0.8rem;height:auto;padding:8px 10px;">${priorityInfo(s.priority).rank}°</button>
+     <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();addToRoadmap('${s.id}')">＋ Roadmap</button>
      <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditModal('${s.id}')">✎ Modifica</button>
      <button class="btn btn-sm" onclick="closeSeriesDetail();removeSeries('${s.id}')" style="background:var(--red);border:none;box-shadow:0 4px 10px rgba(255,59,74,0.25);">✕</button>`;
 
@@ -4274,13 +4386,14 @@ function addSeries(){
   const image=imdbPosterUrl(imdbId);
   const notes=document.getElementById('notes').value.trim();
   const ongoing=_addOngoing;
+  const priority=_addPriority;
   if(!title||!eps||eps<1){ toast('Compila titolo ed episodi','error'); return; }
   if(db.series.find(s=>s.title.toLowerCase()===title.toLowerCase())){ toast('Serie già presente','error'); return; }
-  const newSeries={id:crypto.randomUUID(),title,eps,films,type,imdbId,image,notes,ongoing,inRoadmap:false,addedAt:Date.now()};
+  const newSeries={id:crypto.randomUUID(),title,eps,films,type,imdbId,image,notes,ongoing,priority,inRoadmap:false,addedAt:Date.now()};
   db.series.push(newSeries);
   save();
   localStorage.setItem('st_lastSeriesType', type);
-  renderCatalog();
+  _withScrollLock(()=>renderCatalog());
   document.getElementById('title').value='';
   document.getElementById('eps').value='';
   document.getElementById('films').value='';
@@ -4302,7 +4415,7 @@ function addToRoadmap(id){
   const s=db.series.find(x=>x.id===id);
   if(!s||s.inRoadmap){ toast('Già in roadmap','error'); return; }
   s.inRoadmap=true;
-  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,imdbId:s.imdbId||'',image:s.image||'',notes:s.notes||'',ongoing:!!s.ongoing,status:'normal',currentEp:0,addedAt:s.addedAt});
+  db.roadmap.push({id:s.id,title:s.title,eps:s.eps,type:s.type,films:s.films||0,imdbId:s.imdbId||'',image:s.image||'',notes:s.notes||'',ongoing:!!s.ongoing,priority:s.priority||'normale',status:'normal',currentEp:0,addedAt:s.addedAt});
   save();
   renderCatalog();
   renderRoadmap();
@@ -4332,6 +4445,12 @@ function toggleOnlyFavorites(){
   renderCatalog();
 }
 
+let _onlyOngoing = false;
+function toggleOnlyOngoingFilter(){
+  _onlyOngoing = !_onlyOngoing;
+  renderCatalog();
+}
+
 function toggleCatalogFilterFab(){
   document.getElementById('catalogFilterDropdown')?.classList.toggle('open');
   document.getElementById('catalogFilterFabBtn')?.classList.toggle('active');
@@ -4345,6 +4464,8 @@ function updateCatalogFilterFabUI(){
   if(listItem) listItem.classList.toggle('active', _catalogViewMode==='list');
   const favItem = document.getElementById('catalogFavFabBtn');
   if(favItem) favItem.classList.toggle('active', _onlyFavorites);
+  const ongoingItem = document.getElementById('catalogOngoingFabBtn');
+  if(ongoingItem) ongoingItem.classList.toggle('active', _onlyOngoing);
 }
 
 function renderSortedSeries(list){
@@ -4669,7 +4790,7 @@ function buildCardHTML(s, i){
           <span class="series-card-eps">${s.eps} ep</span>
           <span class="series-card-type-badge ${typeCls}">${s.type}</span>
           ${filmBadgeHtml}
-          <button class="series-card-fav ${s.favorite ? 'active' : ''}" onclick="event.stopPropagation();toggleFavorite('${s.id}')" title="Preferito">★</button>
+          ${priorityBadgeHTML(s)}
         </div>
       </div>
     </div>`;
@@ -4694,6 +4815,14 @@ function toggleEditOngoing(){
   _editOngoing = !_editOngoing;
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
+}
+let _editPriority = 'normale';
+function selectEditPriority(val){
+  _withScrollLock(()=>{
+    _editPriority = val;
+    const group=document.getElementById('editPriorityGroup');
+    if(group) group.querySelectorAll('.priority-check').forEach(el=>{ el.classList.toggle('checked', el.dataset.priority===val); });
+  });
 }
 function findAnyEntryById(id){
   let rec = db.series.find(x=>x.id===id);
@@ -4720,8 +4849,9 @@ function openEditModal(id){
   document.getElementById('editModalNotes').value=s.notes||'';
   document.getElementById('editOngoingRow').classList.toggle('checked', _editOngoing);
   document.getElementById('editOngoingBox').style.color = _editOngoing ? '#fff' : 'transparent';
+  selectEditPriority(s.priority||'normale');
   document.getElementById('editSeriesModal').classList.add('open');
-  setTimeout(()=>document.getElementById('editModalTitle').focus(),80);
+  setTimeout(()=>document.getElementById('editModalTitle').focus({preventScroll:true}),80);
 }
 function closeEditModal(){
   document.getElementById('editSeriesModal').classList.remove('open');
@@ -4745,18 +4875,20 @@ function saveEditModal(){
   const newImage=imdbPosterUrl(newImdbId);
   const newNotes=document.getElementById('editModalNotes').value.trim();
   if(!newTitle||!newEps||newEps<1){ toast('Dati non validi','error'); return; }
-  s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.imdbId=newImdbId; s.image=newImage; s.notes=newNotes; s.ongoing=_editOngoing;
-  [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; r.imdbId=newImdbId; r.image=newImage; } });
-  save();
-  if(found.list==='series') renderCatalog();
-  else if(found.list==='roadmap') renderRoadmap();
-  else if(found.list==='completed') renderCompleted();
-  else if(found.list==='dropped') renderDropped();
-  if(found.list!=='roadmap' && db.roadmap.find(x=>x.id===id)) renderRoadmap();
-  if(found.list!=='series' && db.series.find(x=>x.id===id)) renderCatalog();
-  updateCatalogStats();
-  toast('Serie aggiornata ✓','success');
-  closeEditModal();
+  _withScrollLock(()=>{
+    s.title=newTitle; s.eps=newEps; s.films=newFilms; s.type=newType; s.imdbId=newImdbId; s.image=newImage; s.notes=newNotes; s.ongoing=_editOngoing; s.priority=_editPriority;
+    [db.series,db.roadmap,db.dropped,db.completed].forEach(arr=>{ const r=arr.find(x=>x.id===id); if(r && r!==s){ r.title=newTitle; r.eps=newEps; r.type=newType; r.imdbId=newImdbId; r.image=newImage; } });
+    save();
+    if(found.list==='series') renderCatalog();
+    else if(found.list==='roadmap') renderRoadmap();
+    else if(found.list==='completed') renderCompleted();
+    else if(found.list==='dropped') renderDropped();
+    if(found.list!=='roadmap' && db.roadmap.find(x=>x.id===id)) renderRoadmap();
+    if(found.list!=='series' && db.series.find(x=>x.id===id)) renderCatalog();
+    updateCatalogStats();
+    toast('Serie aggiornata ✓','success');
+    closeEditModal();
+  });
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEditModal(); closeSeriesDetail(); closeAnimeFranchiseModal(); } });
 
@@ -4770,11 +4902,12 @@ function renderCatalog(){
   const q=(document.getElementById('catalogSearch')?.value||'').toLowerCase();
   const epF=parseInt(document.getElementById('epFilterInput')?.value)||0;
   const sort=document.getElementById('catalogSort')?.value||'recent';
+  const priorityFilterVal=document.getElementById('catalogPriorityFilter')?.value||'';
   updateCatalogStats();
   const badge=document.getElementById('epFilterBadge');
   if(epF>0&&badge){ badge.textContent=`${epF} ep`; badge.classList.add('active'); } else if(badge){ badge.classList.remove('active'); }
-  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites+'|'+_catalogViewMode+'|'+_cardTypeFilter)) return;
-  let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite));
+  if(_skipIfUnchanged('catalog', q+'|'+epF+'|'+sort+'|'+_onlyFavorites+'|'+_onlyOngoing+'|'+priorityFilterVal+'|'+_catalogViewMode+'|'+_cardTypeFilter)) return;
+  let filtered=db.series.filter(s=>!s.inRoadmap&&(!q||s.title.toLowerCase().includes(q))&&(!epF||s.eps===epF)&&(!_onlyFavorites||s.favorite)&&(!_onlyOngoing||s.ongoing)&&(!priorityFilterVal||(s.priority||'normale')===priorityFilterVal));
   if(_catalogViewMode==='list'){
     const dubs=renderSortedSeries(filtered.filter(s=>s.type==='DUB'));
     const subs=renderSortedSeries(filtered.filter(s=>s.type==='SUB'));
@@ -4801,7 +4934,7 @@ function addRandom(forceType){
   let r=Math.random()*total, picked=pool[pool.length-1];
   for(let i=0;i<pool.length;i++){ r-=weights[i]; if(r<=0){picked=pool[i];break;} }
   picked.inRoadmap=true;
-  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,imdbId:picked.imdbId||'',image:picked.image||'',notes:picked.notes||'',ongoing:!!picked.ongoing,status:'normal',currentEp:0,addedAt:picked.addedAt});
+  db.roadmap.push({id:picked.id,title:picked.title,eps:picked.eps,type:picked.type,films:picked.films||0,imdbId:picked.imdbId||'',image:picked.image||'',notes:picked.notes||'',ongoing:!!picked.ongoing,priority:picked.priority||'normale',status:'normal',currentEp:0,addedAt:picked.addedAt});
   if(!forceType) db.patternIndex=(db.patternIndex+1)%PATTERN.length;
   save();
   renderCatalog();
@@ -4995,7 +5128,7 @@ function backToRoadmap_fromCompleted(id){
   const item=db.completed.splice(idx,1)[0];
   item.status='normal'; delete item.completedAt;
   db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:item.addedAt||Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:true,addedAt:item.addedAt||Date.now()});
   save(); renderRoadmap(); renderCompleted(); toast(`Riportato in roadmap: ${item.title}`,'success');
 }
 function backToCalatogo_fromRoadmap(id){
@@ -5004,14 +5137,14 @@ function backToCalatogo_fromRoadmap(id){
   const item=db.roadmap.splice(idx,1)[0];
   const existing=db.series.find(s=>s.id===item.id);
   if(existing) existing.inRoadmap=false;
-  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:item.addedAt||Date.now()});
+  else db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:false,addedAt:item.addedAt||Date.now()});
   save(); renderRoadmap(); renderCatalog(); toast(`${item.title} torna in catalogo`,'info');
 }
 function backToCatalogo_fromDropped(id){
   const idx=db.dropped.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:false,addedAt:item.addedAt||Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:false,addedAt:item.addedAt||Date.now()});
   save(); renderDropped(); renderCatalog(); toast(`${item.title} ripristinato in catalogo`,'info');
 }
 function restoreDropped(id){
@@ -5019,7 +5152,7 @@ function restoreDropped(id){
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
   item.status='normal'; db.roadmap.push(item);
-  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,inRoadmap:true,addedAt:item.addedAt||Date.now()});
+  if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:true,addedAt:item.addedAt||Date.now()});
   save(); renderRoadmap(); renderDropped(); toast(`Ripristinato in roadmap: ${item.title}`,'success');
 }
 
@@ -5722,7 +5855,7 @@ function openEditFilmModal(id){
   document.getElementById('editFilmNotes').value = film.notes||'';
   document.getElementById('editFilmImdbId').value = film.imdbId||'';
   document.getElementById('editFilmModal').classList.add('open');
-  setTimeout(()=>document.getElementById('editFilmTitle').focus(),80);
+  setTimeout(()=>document.getElementById('editFilmTitle').focus({preventScroll:true}),80);
 }
 function closeEditFilmModal(){
   document.getElementById('editFilmModal').classList.remove('open');
@@ -5754,7 +5887,7 @@ function saveEditFilm(){
   if(!film){ toast('Film non trovato','error'); return; }
   film.title=title; film.type=type; film.seriesId=seriesId; film.seriesOrder=seriesOrder; film.notes=notes;
   film.imdbId=imdbId; film.image=imdbPosterUrl(imdbId);
-  save(); renderFilms(); renderFilmsCompleted(); updateFilmStats();
+  _withScrollLock(()=>{ save(); renderFilms(); renderFilmsCompleted(); updateFilmStats(); });
   toast('Film aggiornato ✓','success');
   closeEditFilmModal();
 }
