@@ -1662,16 +1662,24 @@ body.theme-light .rm-backdrop.fallback.loaded { opacity: 0.14; }
 
 /* ===== SFONDO PAGINA = BACKDROP DI CIÒ CHE STAI GUARDANDO (bianco e nero) ===== */
 #watchingBackdrop {
-  position: fixed; inset: 0;
+  /* Stile Trakt: il backdrop copre solo la parte alta con proporzioni vicine
+     al 16:9 e sfuma verso il colore scuro di fondo (--bg).
+     Parte da sopra il bordo fisico dello schermo (top negativo) e include
+     l'area di sicurezza: così in modalità app su iPhone copre anche la zona
+     sotto la Dynamic Island invece di lasciarla nera. */
+  position: fixed; left: 0; right: 0;
+  top: calc(-1 * env(safe-area-inset-top, 0px));
+  height: min(calc(62vw + 2 * env(safe-area-inset-top, 0px)), 60vh);
   z-index: 0;
   pointer-events: none;
   background-size: cover;
-  background-position: center 20%;
+  background-position: center top;
+  background-repeat: no-repeat;
   filter: grayscale(1) contrast(1.08);
   opacity: 0;
   transition: opacity 0.7s ease, background-image 0.3s ease;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.15) 94%, transparent 100%);
-          mask-image: linear-gradient(to bottom, #000 0%, #000 60%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.15) 94%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 38%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.3) 82%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 0%, #000 38%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.3) 82%, transparent 100%);
 }
 #watchingBackdrop.on { opacity: 0.16; }
 body.theme-light #watchingBackdrop.on { opacity: 0.12; }
@@ -4641,8 +4649,10 @@ function updateWatchingBackdrop(){
 
   if(!candidates.length){ clear(); return; }
 
-  // 2) ordina per percentuale (a parità, vince chi viene prima in lista)
-  candidates.sort((a,b)=> (b.pct - a.pct) || (a.i - b.i));
+  // 2) vince la serie il cui episodio è avanzato per ultimo (lastEpAt più recente).
+  //    Per le voci senza timestamp (dati precedenti) si ripiega sulla percentuale,
+  //    poi sulla posizione in lista.
+  candidates.sort((a,b)=> ((b.r.lastEpAt||0) - (a.r.lastEpAt||0)) || (b.pct - a.pct) || (a.i - b.i));
 
   const winner = candidates[0];
   const winnerId = String(winner.r.id || winner.i);
@@ -5008,7 +5018,9 @@ function handleRmItemClick(e, id){
 function updateEp(id,val){
   const item=db.roadmap.find(r=>r.id===id);
   if(!item) return;
+  const _prevEp=item.currentEp||0;
   item.currentEp=Math.min(item.eps,Math.max(0,parseInt(val)||0));
+  if(item.currentEp>_prevEp) item.lastEpAt=Date.now();   // l'episodio è andato avanti
   save();
   syncEpUI(id,item);
 }
@@ -5038,6 +5050,7 @@ function setWatching(id){
   item.status=turningOn?'watching':'normal';
   if(turningOn && (!item.currentEp || item.currentEp<=0)){
     item.currentEp = 1;
+    item.lastEpAt = Date.now();
   }
   save();
   const node=document.querySelector(`#roadmap .rm-item[data-id="${id}"]`);
@@ -5229,7 +5242,9 @@ function renderRoadmapReorderBar(){
 function stepEp(id,delta){
   const item=db.roadmap.find(r=>r.id===id);
   if(!item) return;
-  item.currentEp=Math.min(item.eps,Math.max(0,(item.currentEp||0)+delta));
+  const _prevEp=item.currentEp||0;
+  item.currentEp=Math.min(item.eps,Math.max(0,_prevEp+delta));
+  if(item.currentEp>_prevEp) item.lastEpAt=Date.now();   // l'episodio è andato avanti
   save();
   syncEpUI(id,item);
 }
