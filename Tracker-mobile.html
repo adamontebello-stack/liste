@@ -3104,6 +3104,19 @@ body.perf .bottom-nav-indicator {
   transition: transform 0.25s ease, width 0.25s ease !important;
 }
 
+/* Barra di ricerca aperta: sposta in basso le card invece di coprirle */
+#catalog-serie-subtab .serie-sticky-head, #catalog-film-subtab { transition: padding-top 0.2s ease; }
+#catalog-serie-subtab.search-open .serie-sticky-head { padding-top: 96px; }
+#catalog-film-subtab.search-open { padding-top: 96px; }
+
+/* Tasti fissi in basso (vetro trasparente): nessuna ombra esterna */
+.bottom-nav, body.perf .bottom-nav {
+  box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.4), inset 0 -1px 10px rgba(0,0,0,0.22), inset 0 0 0 1px rgba(255,255,255,0.04) !important;
+}
+.bottom-add-btn.hidden { box-shadow: none !important; }
+.bn-btn, .bottom-add-btn { -webkit-tap-highlight-color: transparent; outline: none; }
+.bn-btn:focus, .bn-btn:active { box-shadow: none; background: none; }
+
 </style>
 </head>
 <body class="theme-dark perf">
@@ -3320,7 +3333,6 @@ body.perf .bottom-nav-indicator {
       <div class="section-inline-bar">
         <div class="stats-bar" style="margin-bottom:0.6rem;">
           <div class="stat-pill"><span class="dot"></span> Roadmap: <strong id="roadmap-count">0</strong></div>
-          <div class="stat-pill"><span class="dot red"></span> Dropped: <strong id="drop-count">0</strong></div>
           <div class="stat-pill"><span class="dot" style="background:var(--accent2);box-shadow:0 0 5px var(--accent2)"></span> Watching: <strong id="watching-count">0</strong></div>
         </div>
         <div class="stats-bar" style="margin-bottom:0.6rem; justify-content:flex-end;" id="roadmapReorderBar">
@@ -3328,8 +3340,6 @@ body.perf .bottom-nav-indicator {
         </div>
       </div>
       <div class="roadmap" id="roadmap"></div>
-      <div class="section-label" id="dropped-label" style="display:none; margin: 0.8rem 0 0.3rem;">Droppate</div>
-      <div class="roadmap" id="dropped"></div>
     </div>
   </div>
 </div>
@@ -3371,9 +3381,12 @@ body.perf .bottom-nav-indicator {
       <div class="stat-pill"><span class="dot green"></span> Totale: <strong id="completed-count">0</strong></div>
       <div class="stat-pill"><span class="dot" style="background:var(--dub-color);box-shadow:0 0 5px var(--dub-color)"></span> DUB: <strong id="completed-dub-count">0</strong></div>
       <div class="stat-pill"><span class="dot" style="background:var(--sub-color);box-shadow:0 0 5px var(--sub-color)"></span> SUB: <strong id="completed-sub-count">0</strong></div>
+      <div class="stat-pill"><span class="dot red"></span> Droppate: <strong id="drop-count">0</strong></div>
       <span class="ep-filter-badge" id="completedEpBadge"></span>
     </div>
     <div class="completed-grid" id="completed-list"></div>
+    <div class="section-label" id="dropped-label" style="display:none; margin: 1.4rem 0 0.5rem;">Droppate</div>
+    <div class="completed-grid" id="dropped-list"></div>
   </div>
 
   <div id="completate-film-view" style="display:none">
@@ -3780,6 +3793,22 @@ function loadLocal(){
   }catch(e){ db={...db,...SEED_DATA}; saveLocal(); }
 }
 function saveLocal(){ localStorage.setItem('st_db',JSON.stringify(db)); }
+// Ripulisce eventuali doppioni: stesso id ripetuto nella stessa lista, serie ancora in "Droppate"
+// pur essendo in roadmap, serie in roadmap non marcate come tali nel catalogo.
+function _dedupeDb(){
+  let changed=false;
+  ['series','roadmap','dropped','completed'].forEach(k=>{
+    const seen=new Set(); const before=(db[k]||[]).length;
+    db[k]=(db[k]||[]).filter(x=>{ if(!x||seen.has(x.id)) return false; seen.add(x.id); return true; });
+    if(db[k].length!==before) changed=true;
+  });
+  const rm=new Set(db.roadmap.map(x=>x.id));
+  const dBefore=db.dropped.length;
+  db.dropped=db.dropped.filter(x=>!rm.has(x.id));
+  if(db.dropped.length!==dBefore) changed=true;
+  db.series.forEach(x=>{ if(rm.has(x.id)&&!x.inRoadmap){ x.inRoadmap=true; changed=true; } });
+  return changed;
+}
 
 let _lastSyncedSnapshot = null;
 function _snapshotOf(source){
@@ -3829,7 +3858,9 @@ async function _pull(force){
     const remote=await res.json();
     _lastSyncedSnapshot = _snapshotOf(remote);
     if(remote&&(remote._updatedAt||0)>(db._updatedAt||0)){
+      DB_TOP_KEYS.forEach(k=>{ if(remote[k]===undefined) remote[k]=(k==='patternIndex'?0:[]); });
       db=Object.assign({},db,remote);
+      if(_dedupeDb()) save();
       saveLocal(); renderAll(); toast('Sincronizzato','success');
       lastPushedAt=remote._updatedAt; setSyncState('ok'); return true;
     }
@@ -3996,7 +4027,7 @@ function showSection(event,id){
   const miniNav=document.getElementById('completateMiniNav');
   if(miniNav) miniNav.style.display = (id==='completate') ? 'flex' : 'none';
   if(id==='catalogo'){ renderCatalog(); renderFilms(); renderFilmsCompleted(); }
-  else if(id==='programma'){ renderRoadmap(); renderDropped(); }
+  else if(id==='programma'){ renderRoadmap(); }
   else if(id==='completate'){
     const savedSort=localStorage.getItem('st_completedSort');
     if(savedSort){
@@ -4766,6 +4797,14 @@ function toggleCatalogFilters(){
   if(reveal) reveal.classList.toggle('open', !_catalogFiltersHidden);
   const btn = document.getElementById('catalogSearchFabBtn');
   if(btn) btn.classList.toggle('active', !_catalogFiltersHidden);
+  const _sub=document.getElementById('catalog-serie-subtab');
+  if(_sub) _sub.classList.toggle('search-open', !_catalogFiltersHidden);
+  if(_catalogFiltersHidden){
+    const _s=document.getElementById('catalogSearch'); if(_s) _s.value='';
+    const _e=document.getElementById('epFilterInput'); if(_e) _e.value='';
+    const _c=document.getElementById('epFilterClear'); if(_c) _c.classList.remove('visible');
+    renderCatalog();
+  }
   if(!_catalogFiltersHidden) setTimeout(()=>document.getElementById('catalogSearch')?.focus(),80);
 }
 
@@ -5121,9 +5160,10 @@ function dropEntry(id){
   const item=db.roadmap.splice(idx,1)[0];
   const _src=db.series.find(s=>s.id===item.id);
   if(_src && _src.notes) item.notes=_src.notes;
+  db.dropped=db.dropped.filter(r=>r.id!==item.id);
   db.dropped.push(item);
   db.series=db.series.filter(s=>s.id!==item.id);
-  save(); renderRoadmap(); renderDropped(); toast(`Droppato: ${item.title}`,'info');
+  save(); renderRoadmap(); renderDropped(); toast(`Droppato: ${item.title} (ora in Completate)`,'info');
 }
 function completeEntry(id){
   const idx=db.roadmap.findIndex(r=>r.id===id);
@@ -5140,6 +5180,7 @@ function backToRoadmap_fromCompleted(id){
   if(idx===-1) return;
   const item=db.completed.splice(idx,1)[0];
   item.status='normal'; delete item.completedAt;
+  db.roadmap=db.roadmap.filter(r=>r.id!==item.id); db.series.forEach(s=>{ if(s.id===item.id) s.inRoadmap=true; });
   db.roadmap.push(item);
   if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:true,addedAt:item.addedAt||Date.now()});
   save(); renderRoadmap(); renderCompleted(); toast(`Riportato in roadmap: ${item.title}`,'success');
@@ -5164,7 +5205,8 @@ function restoreDropped(id){
   const idx=db.dropped.findIndex(r=>r.id===id);
   if(idx===-1) return;
   const item=db.dropped.splice(idx,1)[0];
-  item.status='normal'; db.roadmap.push(item);
+  item.status='normal'; db.roadmap=db.roadmap.filter(r=>r.id!==item.id); db.series.forEach(s=>{ if(s.id===item.id) s.inRoadmap=true; });
+  db.roadmap.push(item);
   if(!db.series.find(s=>s.id===item.id)) db.series.push({id:item.id,title:item.title,eps:item.eps,type:item.type,films:item.films||0,imdbId:item.imdbId||'',image:item.image||'',notes:item.notes||'',ongoing:!!item.ongoing,priority:item.priority||'normale',inRoadmap:true,addedAt:item.addedAt||Date.now()});
   save(); renderRoadmap(); renderDropped(); toast(`Ripristinato in roadmap: ${item.title}`,'success');
 }
@@ -5339,18 +5381,46 @@ function _rmSetLinkHighlight(id, on){
   }
 })();
 function renderDropped(){
-  const el=document.getElementById('dropped'),label=document.getElementById('dropped-label');
-  document.getElementById('drop-count').textContent=db.dropped.length;
-  if(!db.dropped.length){ el.innerHTML=''; label.style.display='none'; _invalidateSig('dropped'); return; }
+  const label=document.getElementById('dropped-label'), el=document.getElementById('dropped-list');
+  const cnt=document.getElementById('drop-count'); if(cnt) cnt.textContent=db.dropped.length;
+  if(!el||!label) return;
+  const q=(document.getElementById('completedSearch')?.value||'').toLowerCase();
+  const typeFilter=document.getElementById('completedTypeFilter')?.value||'all';
+  const epF=parseInt(document.getElementById('completedEpFilter')?.value)||0;
+  const data=db.dropped.filter(r=>(!q||r.title.toLowerCase().includes(q))&&(typeFilter==='all'||r.type===typeFilter)&&(!epF||r.eps===epF));
+  if(!data.length){ el.innerHTML=''; label.style.display='none'; _invalidateSig('dropped'); return; }
   label.style.display='flex';
-  if(_skipIfUnchanged('dropped')) return;
-  el.innerHTML=db.dropped.map((r,i)=>{
-    const posterHtml = r.image
-      ? `<div class="rm-poster"><img src="${escAttr(r.image)}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=&quot;rm-poster-noimg&quot;>🎬</span>';"></div>`
-      : `<div class="rm-poster"><span class="rm-poster-noimg">🎬</span></div>`;
-    return `<div class="rm-item" style="opacity:0.65" data-id="${r.id}">${posterHtml}<div class="drag-handle">⠿</div><div class="rm-num">${String(i+1).padStart(2,'0')}</div><div class="rm-info"><div class="rm-name" style="text-decoration:line-through">${r.title}</div><div class="rm-meta">${r.eps} ep</div></div><span class="badge dropped">dropped</span><div class="rm-actions"><button class="item-btn" onclick="restoreDropped('${r.id}')" title="Ripristina">↩</button></div></div>`;
-  }).join('');
+  if(_skipIfUnchanged('dropped', q+'|'+typeFilter+'|'+epF)) return;
+  el.innerHTML=data.map((r,i)=>`<div class="completed-item" data-id="${r.id}" style="cursor:pointer;opacity:0.8;" onclick="handleDroppedItemClick(event,'${r.id}')"><div class="drag-handle">⠿</div><div class="c-num">${String(i+1).padStart(2,'0')}</div><div class="check-mark" style="color:var(--red);">✕</div><div class="c-info"><div class="c-title" style="text-decoration:line-through">${r.title}</div><div class="c-meta">${r.eps} ep${r.currentEp>0?' · visti '+r.currentEp:''}</div></div><span class="badge ${r.type.toLowerCase()}">${r.type}</span><span class="badge dropped">dropped</span></div>`).join('');
   initDragDrop(el,db.dropped,renderDropped);
+}
+function handleDroppedItemClick(e,id){
+  if(e.target.tagName==='BUTTON'||e.target.classList.contains('drag-handle')) return;
+  openDroppedSeriesDetail(id);
+}
+function openDroppedSeriesDetail(id){
+  const s = db.dropped.find(x=>x.id===id);
+  if(!s) return;
+  _detailSeriesId = id;
+  if(typeof setSdPoster==='function') setSdPoster(s);
+  document.getElementById('sdTags').innerHTML =
+    `<span class="badge ${s.type.toLowerCase()} type-toggle-badge" onclick="event.stopPropagation();toggleSeriesType('${s.id}')" title="Cambia SUB/DUB">${s.type}<span class="type-toggle-icon">⇄</span></span>` +
+    `<span class="ongoing-tag" style="color:var(--red);background:rgba(255,59,74,0.12);border-color:rgba(255,59,74,0.28);">✕ Droppata</span>`;
+  document.getElementById('sdTitle').textContent = s.title;
+  let html = '<div class="sd-stats">';
+  html += `<div class="sd-stat"><div class="sd-stat-label">Episodi</div><div class="sd-stat-value">${s.eps}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Tipo</div><div class="sd-stat-value">${s.type}</div></div>`;
+  html += `<div class="sd-stat"><div class="sd-stat-label">Visti</div><div class="sd-stat-value">${s.currentEp||0}/${s.eps}</div></div>`;
+  html += '</div>';
+  if(s.notes){
+    html += `<div><div class="sd-section-label">Note / Watch Order</div><div class="sd-notes">${s.notes.replace(/</g,'&lt;')}</div></div>`;
+  }
+  document.getElementById('sdBody').innerHTML = html;
+  document.getElementById('sdFooter').innerHTML =
+    `<button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();restoreDropped('${s.id}')" style="flex:1;">↩ In roadmap</button>
+     <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();backToCatalogo_fromDropped('${s.id}')" style="flex:1;">◌ Catalogo</button>
+     <button class="btn btn-ghost btn-sm" onclick="closeSeriesDetail();openEditModal('${s.id}')" style="flex:1;">✎ Modifica</button>`;
+  document.getElementById('seriesDetailOverlay').classList.add('open');
 }
 
 function clearCompletedEpFilter(){ const i=document.getElementById('completedEpFilter'); i.value=''; document.getElementById('completedEpClear').classList.remove('visible'); renderCompleted(); }
@@ -5370,6 +5440,7 @@ function renderCompleted(){
   document.getElementById('total-eps').textContent=db.completed.reduce((a,r)=>a+(r.eps||0),0);
   document.getElementById('completed-dub-count').textContent=db.completed.filter(r=>r.type==='DUB').length;
   document.getElementById('completed-sub-count').textContent=db.completed.filter(r=>r.type==='SUB').length;
+  renderDropped();
   if(_skipIfUnchanged('completed', q+'|'+sort+'|'+typeFilter+'|'+epF)) return;
   const el=document.getElementById('completed-list');
   if(!data.length){ el.innerHTML=`<div class="empty">Nessuna serie completata</div>`; return; }
@@ -6123,6 +6194,9 @@ function toggleFilmSearchFab(){
   if(reveal) reveal.classList.toggle('open', !_filmSearchHidden);
   const btn = document.getElementById('filmSearchFabBtn');
   if(btn) btn.classList.toggle('active', !_filmSearchHidden);
+  const _fsub=document.getElementById('catalog-film-subtab');
+  if(_fsub) _fsub.classList.toggle('search-open', !_filmSearchHidden);
+  if(_filmSearchHidden){ const _f=document.getElementById('filmSearch'); if(_f) _f.value=''; renderFilms(); }
   if(!_filmSearchHidden) setTimeout(()=>document.getElementById('filmSearch')?.focus(),80);
 }
 
@@ -6429,6 +6503,7 @@ loadLocal();
 if(!db.films) db.films=[];
 if(!db.filmsCompleted) db.filmsCompleted=[];
 if(!db.filmSeries) db.filmSeries=[];
+if(_dedupeDb()) save();
 renderAll();
 updateBottomAddBtn('catalogo');
 updateCenterDubsVisibility();
