@@ -5853,6 +5853,23 @@ body.ui-desktop .sidebar-nav > * { flex: 0 0 auto; }
   overscroll-behavior: contain;
 }
 
+/* --- 4) MOBILE: le card partono sempre SOTTO i comandi fissi in alto ---
+   In modalità "app web" su iPhone la barra di stato sposta verso il basso i
+   pulsanti fissi (FAB sinistra, DUB/SUB centro, tema/impostazioni destra):
+   se lo spazio riservato non ne tiene conto, la prima riga di card ci finisce
+   sotto. --top-ui-space viene misurata via JS (syncTopUiSpace) e vale 44px
+   quando non serve spazio extra, così il layout normale resta identico. */
+body.ui-mobile .serie-sticky-head,
+body.ui-mobile #catalog-film-subtab,
+body.ui-mobile #programma .section-inline-bar {
+  padding-top: var(--top-ui-space, calc(44px + env(safe-area-inset-top)));
+}
+/* barra di ricerca aperta: allo spazio dei comandi si aggiunge quello del campo */
+body.ui-mobile #catalog-serie-subtab.search-open .serie-sticky-head,
+body.ui-mobile #catalog-film-subtab.search-open {
+  padding-top: calc(var(--top-ui-space, calc(44px + env(safe-area-inset-top))) + 52px);
+}
+
 </style>
 </head>
 <body class="theme-dark perf">
@@ -10063,6 +10080,8 @@ function updateCenterDubsVisibility(){
   filmGroup.style.display = showFilmTabs ? 'flex' : 'none';
   el.classList.toggle('visible', showDub || showFilmTabs);
   updateCenterDubsUI();
+  // i pulsanti centrali compaiono/scompaiono: ricalcola lo spazio riservato sopra le card
+  if(typeof syncTopUiSpace === 'function') syncTopUiSpace();
 }
 function updateFilmFilterFabUI(){
   const dub = document.getElementById('filmDubFabBtn');
@@ -10164,6 +10183,38 @@ function _placeSettingsDropdown(){
     dd.style.overflowY = 'auto';
   }
 }
+/* =========================================================================
+   SPAZIO IN ALTO PER I COMANDI FISSI (solo versione mobile)
+   I pulsanti fissi (filtri/ricerca a sinistra, DUB/SUB al centro, tema e
+   impostazioni a destra) si posizionano con env(safe-area-inset-top): in
+   modalità "app web" su iPhone la barra di stato aggiunge ~50px e i pulsanti
+   scendono. Qui si misura quanto occupano davvero e si riserva quello spazio
+   sopra alle card, così non ci finiscono mai sotto.
+   ========================================================================= */
+function syncTopUiSpace(){
+  if(!IS_MOBILE) return;
+  const main = document.querySelector('main');
+  if(!main) return;
+  const mainPadTop = parseFloat(getComputedStyle(main).paddingTop) || 0;
+  // punto (in coordinate schermo) in cui inizia il contenuto delle sezioni:
+  // le differenze con lo scroll si annullano, quindi il calcolo è stabile
+  const contentTop = main.getBoundingClientRect().top + mainPadTop;
+  let bottom = 0;
+  ['.top-actions', '.catalog-center-dubs', '.fab-toolbar-row', '.roadmap-quickpick'].forEach(sel=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      const cs = getComputedStyle(el);
+      if(cs.display === 'none' || cs.visibility === 'hidden') return;
+      const r = el.getBoundingClientRect();
+      if(r.height > 0 && r.width > 0) bottom = Math.max(bottom, r.bottom);
+    });
+  });
+  // 4px di respiro + minimo storico di 44px: senza safe-area il risultato è
+  // identico al layout originale (stessi pixel), con la safe-area cresce
+  // esattamente di quanto i comandi fissi sono scesi.
+  const space = Math.max(44, Math.ceil(bottom + 4 - contentTop));
+  document.documentElement.style.setProperty('--top-ui-space', space + 'px');
+}
+window.addEventListener('orientationchange', ()=>{ setTimeout(syncTopUiSpace, 120); });
 
 // ---- INIT ----
 loadTheme();
@@ -10180,12 +10231,14 @@ renderAll();
 // ---- avvio della UI scelta (mobile: barra in basso, pulsanti DUB/SUB, ecc.) ----
 updateBottomAddBtn('catalogo');
 updateCenterDubsVisibility();
+syncTopUiSpace();
 requestAnimationFrame(moveBottomNavIndicator);
 window.addEventListener('load', moveBottomNavIndicator);
 window.addEventListener('resize', ()=>{
-  if(IS_MOBILE) moveBottomNavIndicator();
+  if(IS_MOBILE){ moveBottomNavIndicator(); syncTopUiSpace(); }
   if(_settingsDropdownOpen()) _placeSettingsDropdown();
 });
+window.addEventListener('load', syncTopUiSpace);
 if(IS_MOBILE){
   // il tasto Esc chiude anche il poster ingrandito
   document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const b=document.getElementById('posterLightbox'); if(b) b.classList.remove('open'); } });
@@ -10230,5 +10283,5 @@ function cycleUiShell(){
 })();
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5032ee16fc0ed18',t:'MTc5Mjk1MTg3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5036e0e2adfee80',t:'MTc5Mjk1NDQ2Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
