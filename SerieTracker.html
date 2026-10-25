@@ -5783,6 +5783,76 @@ body.ui-mobile .bn-btn, body.ui-mobile .bottom-add-btn { -webkit-tap-highlight-c
 }
 body.ui-mobile .bn-btn:focus, body.ui-mobile .bn-btn:active { box-shadow: none; background: none;
 }
+
+/* =========================================================================
+   CORREZIONI RESPONSIVE (file unico)
+   1) Desktop — la barra laterale non deve mai allargarsi a tutta la pagina:
+      la regola globale "nav { width: 100% }" (pensata per schermi piccoli)
+      colpiva anche .sidebar-nav, che è un <nav>, schiacciandola sullo schermo.
+   2) Mobile — la barra in basso resta compatta anche su schermi larghi.
+   3) Menù impostazioni — posizionato via JS (sempre dentro lo schermo).
+   ========================================================================= */
+
+/* --- 1) DESKTOP: barra laterale sempre larga quanto i suoi pulsanti --- */
+body.ui-desktop .sidebar-nav,
+body.ui-desktop .mini-sidebar-nav {
+  width: -moz-fit-content;
+  width: fit-content;
+  flex: 0 0 auto;
+  order: 0;
+}
+body.ui-desktop .sidebar-nav { max-width: calc(100vw - 24px); }
+body.ui-desktop .mini-sidebar-nav { max-width: calc(100vw - 108px); }
+
+/* Solo con schermi molto bassi la barra diventa scrollabile al suo interno
+   (in tutti gli altri casi resta senza ritagli, così i suoi bagliori si vedono). */
+@media (max-height: 620px) {
+  body.ui-desktop .sidebar-nav {
+    max-height: calc(100vh - 16px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  body.ui-desktop .sidebar-nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
+}
+body.ui-desktop .sidebar-nav > * { flex: 0 0 auto; }
+
+/* Finché lo spazio ai lati non basta, il contenuto scorre sotto la barra
+   laterale: si riserva a sinistra lo spazio che occupa (74px) così le card
+   non ci finiscono mai sopra. In "Completate" la barra è doppia (mini
+   sidebar Serie/Film), quindi serve più spazio. */
+@media (max-width: 1270px) {
+  body.ui-desktop main { padding-left: 86px; }
+}
+@media (max-width: 1400px) {
+  body.ui-desktop.is-completate main { padding-left: 150px; }
+}
+
+/* Su schermi molto bassi la barra diventa scrollabile (già gestito sopra),
+   così i pulsanti non finiscono mai fuori dallo schermo. */
+
+/* --- 2) MOBILE: barra in basso compatta anche su schermi grandi --- */
+@media (min-width: 760px) {
+  body.ui-mobile .bottom-bar {
+    left: 50%;
+    right: auto;
+    width: 100%;
+    max-width: min(500px, calc(100vw - 24px));
+    transform: translateX(-50%);
+    padding: 0 4px;
+  }
+  body.ui-mobile .bottom-nav { max-width: 420px; }
+  body.ui-mobile .bottom-nav .bn-btn { max-width: 88px; }
+}
+
+/* --- 3) Menù impostazioni: mai più alto dello schermo --- */
+.settings-dropdown {
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 </style>
 </head>
 <body class="theme-dark perf">
@@ -7290,6 +7360,8 @@ document.addEventListener('click', function(e){
 function showSection(event,id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  // In "Completate" la barra laterale desktop è doppia: il CSS ne tiene conto
+  document.body.classList.toggle('is-completate', id==='completate');
   // Navigazione: sidebar verticale (desktop) e bottom-nav (mobile)
   document.querySelectorAll('.sidebar-nav .nav-btn, .mini-sidebar-nav .nav-btn, .bottom-nav .bn-btn').forEach(b=>b.classList.remove('active'));
   if(event && event.currentTarget) event.currentTarget.classList.add('active');
@@ -7323,6 +7395,7 @@ function showCatalogTab(event,tab){
   document.getElementById('catalogo').classList.add('active');
   document.querySelectorAll('.sidebar-nav .nav-btn, .mini-sidebar-nav .nav-btn, .bottom-nav .bn-btn').forEach(b=>b.classList.remove('active'));
   if(event && event.currentTarget) event.currentTarget.classList.add('active');
+  document.body.classList.remove('is-completate');
   ['catalogo','programma','completate'].forEach(s=>{
     const p=document.getElementById(s+'-fap');
     if(p) p.style.display = (s==='catalogo') ? 'flex' : 'none';
@@ -8871,16 +8944,25 @@ function renderAll(){ renderCatalog(); renderRoadmap(); renderDropped(); renderC
 
 // ---- SETTINGS DROPDOWN ----
 function toggleSettingsMenu(){
-  const dd = document.getElementById('settingsDropdown');
+  const dd = _mountSettingsDropdown();
+  if(!dd) return;
   const btn = document.getElementById('settingsToggleBtn');
-  dd.classList.toggle('open');
-  btn.classList.toggle('active');
+  const willOpen = !dd.classList.contains('open');
+  dd.classList.toggle('open', willOpen);
+  if(btn) btn.classList.toggle('active', willOpen);
+  if(willOpen) _placeSettingsDropdown();
 }
 function closeSettingsMenu(){
-  document.getElementById('settingsDropdown').classList.remove('open');
-  document.getElementById('settingsToggleBtn').classList.remove('active');
+  const dd = document.getElementById('settingsDropdown');
+  const btn = document.getElementById('settingsToggleBtn');
+  if(dd) dd.classList.remove('open');
+  if(btn) btn.classList.remove('active');
 }
 document.addEventListener('click', function(e){
+  // Il menù impostazioni viene spostato sotto <body> (per non farsi tagliare
+  // fuori dallo schermo): un click al suo interno non deve chiuderlo.
+  const dd = document.getElementById('settingsDropdown');
+  if(dd && dd.contains(e.target)) return;
   const wrapper = document.getElementById('settingsWrapper');
   if(wrapper && !wrapper.contains(e.target)) closeSettingsMenu();
   const catFilterWrap = document.getElementById('catalogFilterFabWrapper');
@@ -10010,6 +10092,78 @@ function syncEpUI(id,item){
   }
   if(typeof updateWatchingBackdrop==='function') updateWatchingBackdrop();
 }
+function _settingsDropdownOpen(){
+  const dd = document.getElementById('settingsDropdown');
+  return !!(dd && dd.classList.contains('open'));
+}
+// Il menù impostazioni viene spostato sotto <body> e posizionato in coordinate
+// fisse: così non può essere tagliato fuori né dalla barra laterale (che ha un
+// transform) né da eventuali contenitori con overflow. La posizione viene poi
+// ricalcolata in base allo spazio realmente disponibile nella finestra.
+function _mountSettingsDropdown(){
+  const dd = document.getElementById('settingsDropdown');
+  if(dd && dd.parentElement !== document.body) document.body.appendChild(dd);
+  return dd;
+}
+function _placeSettingsDropdown(){
+  const dd = _mountSettingsDropdown();
+  const btn = document.getElementById('settingsToggleBtn');
+  if(!dd || !btn) return;
+  const EDGE = 8, MARGIN = 10;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const r = btn.getBoundingClientRect();
+  // azzera i vincoli e misura la dimensione naturale del menù
+  dd.style.position = 'fixed';
+  dd.style.left = '0px';
+  dd.style.top = '0px';
+  dd.style.right = 'auto';
+  dd.style.bottom = 'auto';
+  dd.style.maxWidth = 'none';
+  dd.style.maxHeight = 'none';
+  dd.style.overflowY = '';
+  let w = dd.offsetWidth || 200;
+  let h = dd.offsetHeight || 0;
+  if(w > vw - EDGE * 2){                       // mai più largo dello schermo
+    dd.style.maxWidth = (vw - EDGE * 2) + 'px';
+    w = dd.offsetWidth; h = dd.offsetHeight;
+  }
+  let left, top;
+  if(IS_MOBILE){
+    // mobile: sotto il pulsante, allineato a destra; se non c'è spazio si apre sopra
+    left = r.right - w;
+    top = r.bottom + MARGIN;
+    if(top + h > vh - EDGE) top = r.top - MARGIN - h;
+  } else {
+    // desktop: accanto alla barra laterale, allineato al pulsante.
+    // Se c'è spazio a destra si apre lì, altrimenti a sinistra; se non basta
+    // né l'uno né l'altro si apre dal lato con più spazio restringendolo.
+    const spaceRight = (vw - EDGE) - (r.right + MARGIN);
+    const spaceLeft  = (r.left - MARGIN) - EDGE;
+    if(spaceRight >= w){
+      left = r.right + MARGIN;
+    } else if(spaceLeft >= w){
+      left = r.left - MARGIN - w;
+    } else if(spaceRight >= spaceLeft){
+      dd.style.maxWidth = Math.max(170, spaceRight) + 'px';
+      w = dd.offsetWidth; h = dd.offsetHeight;
+      left = r.right + MARGIN;
+    } else {
+      dd.style.maxWidth = Math.max(170, spaceLeft) + 'px';
+      w = dd.offsetWidth; h = dd.offsetHeight;
+      left = r.left - MARGIN - w;
+    }
+    top = r.top;
+  }
+  left = Math.max(EDGE, Math.min(left, vw - w - EDGE));
+  top  = Math.max(EDGE, Math.min(top, vh - h - EDGE));
+  dd.style.left = left + 'px';
+  dd.style.top  = top + 'px';
+  // menù più alto dello schermo: diventa scrollabile al suo interno
+  if(h > vh - EDGE * 2){
+    dd.style.maxHeight = (vh - EDGE * 2) + 'px';
+    dd.style.overflowY = 'auto';
+  }
+}
 
 // ---- INIT ----
 loadTheme();
@@ -10028,7 +10182,10 @@ updateBottomAddBtn('catalogo');
 updateCenterDubsVisibility();
 requestAnimationFrame(moveBottomNavIndicator);
 window.addEventListener('load', moveBottomNavIndicator);
-window.addEventListener('resize', ()=>{ if(!IS_MOBILE) return; moveBottomNavIndicator(); });
+window.addEventListener('resize', ()=>{
+  if(IS_MOBILE) moveBottomNavIndicator();
+  if(_settingsDropdownOpen()) _placeSettingsDropdown();
+});
 if(IS_MOBILE){
   // il tasto Esc chiude anche il poster ingrandito
   document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ const b=document.getElementById('posterLightbox'); if(b) b.classList.remove('open'); } });
@@ -10073,5 +10230,5 @@ function cycleUiShell(){
 })();
 
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a50305e29cf7baf7',t:'MTc5Mjk1MDIwMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5032ee16fc0ed18',t:'MTc5Mjk1MTg3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
